@@ -31,29 +31,46 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import fetch_transcripts as FT  # noqa: E402
-from config import (GEMINI_MODEL, LLM_PROVIDER, OPENAI_MODEL, REFINE_OVERLAP,  # noqa: E402
+from config import (LLM_PROVIDER, OPENAI_MODEL, REFINE_MODEL, REFINE_OVERLAP,  # noqa: E402
                     REFINE_WINDOW_SEC, REFINED_DIR, TRANSCRIPTS_DIR)
 from correct import departments  # noqa: E402
 
-# Gemini 3.6 Flash 유료 단가 (1M 토큰당 달러). 다른 모델을 쓰면 여기만 고친다.
-PRICE_IN, PRICE_OUT = 0.75, 3.75
+# 모델별 유료 단가 (1M 토큰당 달러, 2026-08 기준). 값이 바뀌면 여기만 고친다.
+PRICES = {
+    "gemini-3.7-flash":      (0.75, 3.75),
+    "gemini-3.6-flash":      (0.75, 3.75),
+    "gemini-3.5-flash":      (1.50, 9.00),
+    "gemini-3.5-flash-lite": (0.30, 2.50),
+    "gemini-3.1-flash-lite": (0.25, 1.50),
+}
+DEFAULT_PRICE = (0.75, 3.75)
 USD_KRW = 1450
+
+
+def price_of(model: str) -> tuple[float, float]:
+    # 긴 이름부터 본다. 'gemini-3.5-flash-lite' 가 'gemini-3.5-flash' 로 먼저 걸리면
+    # lite 를 비싼 단가로 계산해 버린다.
+    for name in sorted(PRICES, key=len, reverse=True):
+        if model.startswith(name):
+            return PRICES[name]
+    return DEFAULT_PRICE
 
 
 class RefineError(RuntimeError):
     pass
 
 
-def model_error_hint(exc: Exception) -> str:
+def model_error_hint(exc: Exception, model: str = "") -> str:
     """모델 이름 문제는 스택 트레이스보다 '뭘 바꾸면 되는지'가 필요하다."""
     msg = str(exc)
+    model = model or REFINE_MODEL
     if "404" in msg and ("no longer available" in msg or "NOT_FOUND" in msg):
         import re as _re
         m = _re.search(r"use models/([\w.\-]+)", msg)
         suggest = m.group(1) if m else "최신 flash 모델"
         return (
-            f"모델 '{GEMINI_MODEL}' 을(를) 쓸 수 없습니다. 구글이 제공을 중단했습니다.\n"
-            f"  → GEMINI_MODEL 환경변수를 '{suggest}' 로 바꾸거나 collector/config.py 기본값을 고치세요.\n"
+            f"모델 '{model}' 을(를) 쓸 수 없습니다. 구글이 제공을 중단했습니다.\n"
+            f"  → GEMINI_MODEL(전체) 또는 REFINE_MODEL/SUMMARY_MODEL(단계별) 을 '{suggest}' 로 바꾸세요.\n"
             f"  예) $env:GEMINI_MODEL = \"{suggest}\"\n"
             f"--- 원본 오류 ---\n{msg[:400]}"
         )
@@ -155,7 +172,8 @@ def chunk(cues: list[dict], window_sec: int) -> list[tuple[int, int]]:
     return spans
 
 
-def _call(prompt: str) -> str:
+def _call(prompt: str, model: str = "") -> str:
+    model = model or REFINE_MODEL
     if LLM_PROVIDER == "gemini":
         from google import genai
         from google.genai import types
@@ -165,7 +183,7 @@ def _call(prompt: str) -> str:
         client = genai.Client(api_key=GEMINI_API_KEY)
         try:
             res = client.models.generate_content(
-                model=GEMINI_MODEL,
+                model=model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.1,                # 교정은 창의성이 필요 없다
@@ -176,7 +194,7 @@ def _call(prompt: str) -> str:
                 ),
             )
         except Exception as exc:  # noqa: BLE001
-            raise RefineError(model_error_hint(exc)) from None
+            raise RefineError(model_error_hint(exc, model)) from None
         return res.text
     from openai import OpenAI
     from config import OPENAI_API_KEY
@@ -204,7 +222,7 @@ def _parse(raw: str) -> list[dict]:
     return out
 
 
-def refine_chunk(cues: list[dict], context: list[dict]) -> list[dict]:
+def refine_chunk(cues: list[dict], context: list[dict], model: str = "") -> list[dict]:
     """토막 하나를 교정한다. 줄 수가 안 맞으면 그 토막은 원문을 유지한다."""
     lines = "\n".join(f'{i}\t[{c["t"] // 60}:{c["t"] % 60:02d}]\t{c["text"]}'
                       for i, c in enumerate(cues))
@@ -212,7 +230,7 @@ def refine_chunk(cues: list[dict], context: list[dict]) -> list[dict]:
     prompt = PROMPT.format(departments=", ".join(departments()), context=ctx,
                            lines=lines, count=len(cues))
 
-    got = _parse(_call(prompt))
+    got = _parse(_call(prompt, model))
     by_i = {int(x["i"]): x for x in got if isinstance(x, dict) and "i" in x}
 
     # 빠진 줄이 있으면 그 줄만 원문으로 채운다. 통째로 버리지 않는다.
@@ -235,7 +253,8 @@ def refine_chunk(cues: list[dict], context: list[dict]) -> list[dict]:
 
 
 def refine_doc(tr: dict, *, window_sec: int, verbose: bool = True,
-               merge: bool = True) -> dict:
+               merge: bool = True, model: str = "") -> dict:
+    model = model or REFINE_MODEL
     src_count = len(tr["cues"])
     cues = merge_cues(tr["cues"]) if merge else tr["cues"]
     spans = chunk(cues, window_sec)
@@ -249,7 +268,7 @@ def refine_doc(tr: dict, *, window_sec: int, verbose: bool = True,
         ctx = cues[max(0, a - REFINE_OVERLAP):a]
         if verbose:
             print(f"    토막 {n}/{len(spans)} ({part[0]['t'] // 60}~{part[-1]['t'] // 60}분, {len(part)}줄)")
-        done = refine_chunk(part, ctx)
+        done = refine_chunk(part, ctx, model)
         for src, dst in zip(part, done):
             base = src.get("raw", src["text"])       # 사전 교정 전 ASR 원문
             if dst["text"] != base:
@@ -275,7 +294,7 @@ def refine_doc(tr: dict, *, window_sec: int, verbose: bool = True,
     return {
         **{k: v for k, v in tr.items() if k not in ("cues", "glossaryHits", "_sample", "_sampleNote")},
         "refinedAt": FT.now_iso(),
-        "refineModel": GEMINI_MODEL if LLM_PROVIDER == "gemini" else OPENAI_MODEL,
+        "refineModel": model if LLM_PROVIDER == "gemini" else OPENAI_MODEL,
         "chunkCount": len(spans),
         "changedLines": changed,
         "speakerTurns": speakers,
@@ -286,7 +305,8 @@ def refine_doc(tr: dict, *, window_sec: int, verbose: bool = True,
     }
 
 
-def estimate(tr: dict, window_sec: int, merge: bool = True) -> dict:
+def estimate(tr: dict, window_sec: int, merge: bool = True, model: str = "") -> dict:
+    price_in, price_out = price_of(model or REFINE_MODEL)
     """호출 없이 토막 수·토큰·비용을 계산한다."""
     cues = merge_cues(tr["cues"]) if merge else tr["cues"]
     spans = chunk(cues, window_sec)
@@ -301,7 +321,7 @@ def estimate(tr: dict, window_sec: int, merge: bool = True) -> dict:
         out = (ch + len(part) * 12) * 1.1          # 교정문 + JSON 껍데기
         tok_out += out
         biggest = max(biggest, out)
-    cost = tok_in / 1e6 * PRICE_IN + tok_out / 1e6 * PRICE_OUT
+    cost = tok_in / 1e6 * price_in + tok_out / 1e6 * price_out
     return {"chunks": len(spans), "lines": len(cues), "in": tok_in, "out": tok_out,
             "maxOut": biggest, "usd": cost, "krw": cost * USD_KRW}
 
@@ -348,7 +368,10 @@ def main() -> int:
     ap.add_argument("--id", help="특정 회차만 (예: 2026-W34)")
     ap.add_argument("--window", type=int, default=REFINE_WINDOW_SEC, help="토막 길이(초)")
     ap.add_argument("--dry-run", action="store_true", help="호출 없이 토막·토큰·비용만")
+    ap.add_argument("--model", default="", help="이번 실행에만 쓸 모델 (예: gemini-3.5-flash-lite)")
+    ap.add_argument("--out", help="결과를 다른 경로에 저장 (모델 비교용). 지정하면 index 는 건드리지 않는다")
     args = ap.parse_args()
+    model = args.model or REFINE_MODEL
 
     files = sorted(TRANSCRIPTS_DIR.glob("*.json"))
     if not files:
@@ -362,12 +385,13 @@ def main() -> int:
         docs = [d for d in docs if not (REFINED_DIR / f'{d["id"]}.json').exists()]
 
     if args.dry_run:
-        print(f"토막 길이 {args.window}초 기준\n")
+        pin, pout = price_of(model)
+        print(f"모델 {model} (입력 ${pin}/출력 ${pout} per 1M) · 토막 길이 {args.window}초\n")
         print(f"{'회차':<10}{'자막줄':>7}{'문장줄':>7}{'토막':>5}{'입력':>9}{'출력':>9}{'최대출력':>9}{'비용':>8}")
         print("-" * 70)
         tot = {"in": 0, "out": 0, "krw": 0}
         for d in docs:
-            e = estimate(d, args.window)
+            e = estimate(d, args.window, model=model)
             for k in tot:
                 tot[k] += e[k]
             print(f'{d["id"]:<10}{d["cueCount"]:>7}{e["lines"]:>7}{e["chunks"]:>5}'
@@ -387,10 +411,11 @@ def main() -> int:
     failures = 0
     for d in docs:
         try:
-            out = refine_doc(d, window_sec=args.window)
-            FT.save_json(REFINED_DIR / f'{d["id"]}.json', out)
+            out = refine_doc(d, window_sec=args.window, model=model)
+            # --out 은 모델 비교용이다. 정식 산출물을 덮어쓰지 않고 index 도 건드리지 않는다.
+            FT.save_json(Path(args.out) if args.out else REFINED_DIR / f'{d["id"]}.json', out)
             entry = next((m for m in index["meetings"] if m["id"] == d["id"]), None)
-            if entry is not None:
+            if entry is not None and not args.out:
                 entry["hasRefined"] = True
                 entry["speakerTurns"] = out["speakerTurns"]
                 index["updatedAt"] = FT.now_iso()

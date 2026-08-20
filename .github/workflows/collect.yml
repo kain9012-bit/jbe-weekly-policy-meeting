@@ -1,9 +1,6 @@
 name: 주간정책회의 수집
 
 on:
-  schedule:
-    # 3시간마다 게시판 확인 (UTC). 회의 게시글은 보통 월·화 오전에 올라온다.
-    - cron: "0 */3 * * *"
   workflow_dispatch:
     inputs:
       mode:

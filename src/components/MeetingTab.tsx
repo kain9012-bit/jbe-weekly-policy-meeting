@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, ChevronRight } from 'lucide-react';
+import { FileText, ChevronRight, Download } from 'lucide-react';
 import type { ActiveTab, IndexDoc, MeetingDoc } from '../types';
 import { Badge, EmptyState, Quote, SampleNotice, SectionTitle, TimeLink } from './Ui';
 import { duration, korDate } from '../lib/util';
@@ -92,7 +92,24 @@ export const MeetingTab: React.FC<Props> = ({
                 원 게시글
               </a>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">{meeting.title}</h2>
+
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <h2 className="text-2xl font-bold text-slate-900">{meeting.title}</h2>
+              {entry?.hasHandout && (
+                <a
+                  href={`${import.meta.env.BASE_URL || './'}data/handouts/${meeting.id}.hwpx`.replace(
+                    /([^:]\/)\/+/g,
+                    '$1',
+                  )}
+                  download={`${meeting.id}_전달사항.hwpx`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-slate-900
+                             hover:bg-slate-800 text-white text-sm font-bold shrink-0"
+                >
+                  <Download className="w-4 h-4" aria-hidden="true" />
+                  전달사항 내려받기 (hwpx)
+                </a>
+              )}
+            </div>
 
             <div className="rounded-lg overflow-hidden border border-slate-200 bg-black aspect-video">
               <iframe

@@ -32,6 +32,11 @@ HTTP_TIMEOUT = 30
 # LLM
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").strip().lower()  # gemini | openai
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+# 단계마다 모델을 달리 쓸 수 있다. 지정하지 않으면 GEMINI_MODEL 을 따른다.
+#   교정(1.5단계)은 300줄을 그대로 되뱉는 일이라 지시 이행이 중요하고,
+#   요약(2단계)은 판단이 중요하다. 어느 쪽에 가벼운 모델이 맞는지는 돌려보고 정한다.
+REFINE_MODEL = os.getenv("REFINE_MODEL") or GEMINI_MODEL
+SUMMARY_MODEL = os.getenv("SUMMARY_MODEL") or GEMINI_MODEL
 # 교정 단계는 자막 전문을 그대로 다시 출력하므로 토막을 나눈다.
 # 10분(약 200큐·3,600자)이면 출력이 4k 토큰 안팎이라 잘릴 위험이 없다.
 REFINE_WINDOW_SEC = int(os.getenv("REFINE_WINDOW_SEC", "600"))

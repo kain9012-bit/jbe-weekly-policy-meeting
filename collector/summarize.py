@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 import re
 
-from config import (GEMINI_API_KEY, GEMINI_MODEL, LLM_PROVIDER, OPENAI_API_KEY,
-                    OPENAI_MODEL)
+from config import (GEMINI_API_KEY, LLM_PROVIDER, OPENAI_API_KEY, OPENAI_MODEL,
+                    SUMMARY_MODEL)
 from correct import departments
 
 SCHEMA_HINT = """
@@ -99,7 +99,7 @@ def _call_gemini(prompt: str) -> str:
     client = genai.Client(api_key=GEMINI_API_KEY)
     try:
         res = client.models.generate_content(
-            model=GEMINI_MODEL,
+            model=SUMMARY_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.2,
@@ -111,7 +111,7 @@ def _call_gemini(prompt: str) -> str:
         )
     except Exception as exc:  # noqa: BLE001
         from refine import model_error_hint
-        raise RuntimeError(model_error_hint(exc)) from None
+        raise RuntimeError(model_error_hint(exc, SUMMARY_MODEL)) from None
     return res.text
 
 
@@ -152,4 +152,4 @@ def summarize(*, title: str, date: str, transcript: str,
 
 
 def model_name() -> str:
-    return GEMINI_MODEL if LLM_PROVIDER == "gemini" else OPENAI_MODEL
+    return SUMMARY_MODEL if LLM_PROVIDER == "gemini" else OPENAI_MODEL

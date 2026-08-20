@@ -146,7 +146,8 @@ def test_refine():
     ]
     calls = []
     original = RF._call
-    RF._call = lambda p: (calls.append(p), _json.dumps(replies[len(calls) - 1], ensure_ascii=False))[1]
+    RF._call = lambda p, m="": (calls.append(p),
+                                _json.dumps(replies[len(calls) - 1], ensure_ascii=False))[1]
     try:
         out = RF.refine_doc(
             {"id": "T", "cues": cues, "cueCount": 5, "title": "t", "date": "2026-01-01"},

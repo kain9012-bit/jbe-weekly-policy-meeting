@@ -104,6 +104,8 @@ export interface IndexEntry {
   hasRefined?: boolean;
   speakerTurns?: number;
   hasSummary: boolean;
+  /** 대변인실 양식의 전달사항 hwpx 가 생성돼 있는지 */
+  hasHandout?: boolean;
   summary: string;
   directiveCount: number;
   depts: string[];
