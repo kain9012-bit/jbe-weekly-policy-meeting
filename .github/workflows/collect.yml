@@ -1,0 +1,83 @@
+name: 주간정책회의 수집
+
+on:
+  schedule:
+    # 3시간마다 게시판 확인 (UTC). 회의 게시글은 보통 월·화 오전에 올라온다.
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "처리 범위"
+        type: choice
+        default: "new"
+        options:
+          - new              # 신규 회차만: 자막 → 요약
+          - all              # 전 회차 다시
+          - transcripts-only # 1단계(자막)까지만
+          - summary-only     # 이미 받은 자막으로 요약만
+          - dry-run          # 신규 여부만 확인
+      post:
+        description: "특정 게시글 dataSid (선택)"
+        required: false
+
+# 유튜브가 데이터센터 IP를 차단하므로 자체 호스팅 러너(사무실 PC)에서 실행한다.
+# 저장소 Variables 의 RUNNER_LABEL 로 라벨을 바꿀 수 있다.
+jobs:
+  collect:
+    runs-on: ${{ vars.RUNNER_LABEL && fromJSON(format('["self-hosted","{0}"]', vars.RUNNER_LABEL)) || 'self-hosted' }}
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r collector/requirements.txt
+
+      # 1단계가 되는지 먼저 보여준다. 실패해도 멈추지 않고 로그만 남긴다.
+      - name: 자막 상태 점검
+        continue-on-error: true
+        run: python collector/fetch_transcripts.py --check
+
+      - name: 수집 실행
+        env:
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
+        run: |
+          MODE="${{ inputs.mode || 'new' }}"
+          ARGS=""
+          case "$MODE" in
+            all)              ARGS="--all" ;;
+            transcripts-only) ARGS="--transcripts-only" ;;
+            summary-only)     ARGS="--summary-only" ;;
+            dry-run)          ARGS="--dry-run" ;;
+          esac
+          if [ -n "${{ inputs.post }}" ]; then ARGS="$ARGS --post ${{ inputs.post }}"; fi
+          python collector/run.py $ARGS
+
+      - name: 변경분 커밋
+        if: ${{ inputs.mode != 'dry-run' }}
+        run: |
+          git config user.name  "jbe-meeting-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "새로 수집된 자료 없음"
+          else
+            git commit -m "회의 자동 수집 $(date +%Y-%m-%d)"
+            git pull --rebase --autostash
+            git push
+          fi

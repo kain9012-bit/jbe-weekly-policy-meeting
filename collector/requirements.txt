@@ -1,0 +1,9 @@
+requests>=2.32
+yt-dlp>=2025.1.1
+youtube-transcript-api>=1.0.0
+google-genai>=1.0.0 ; python_version >= "3.9"
+openai>=1.60.0
+
+# ASCII only on purpose.
+# pip reads this file with the OS locale codec (cp949 on Korean Windows),
+# so a non-ASCII character here breaks `pip install -r` with UnicodeDecodeError.

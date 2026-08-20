@@ -1,0 +1,95 @@
+{
+  "updatedAt": "2026-08-20T16:00:00+09:00",
+  "_note": "영상 ID·게시글 ID·재생시간은 실제 확인값입니다. 자막과 요약은 수집기를 돌려야 채워집니다.",
+  "seenPostIds": [
+    "1165506",
+    "1156841",
+    "1159172",
+    "1162511"
+  ],
+  "meetings": [
+    {
+      "id": "2026-W34",
+      "title": "2026년 8월 3주 주간정책회의",
+      "date": "2026-08-18",
+      "videoId": "MeLmER3fq_w",
+      "postId": "1165506",
+      "postUrl": "https://www.jbe.go.kr/board/view.jbe?boardId=BBS_0000681&menuCd=DOM_000000507001000000&paging=ok&startPage=1&searchOperation=AND&dataSid=1165506",
+      "durationSec": 1556,
+      "hasTranscript": true,
+      "cueCount": 591,
+      "charCount": 9739,
+      "captionSource": "yt-dlp/json3",
+      "hasSummary": true,
+      "summary": "교육감은 7월 자치단체장 직무평가에서 전북교육청이 좋은 결과를 받은 것을 두고, 교육 수장 공백기를 지나면서도 직원들이 흘린 땀과 새 출발에 대한 기대가 반영된 결과라며 감사를 전했다. 이어 지난주 지시사항에 대한 부서별 처리 결과 보고가 이어졌다. 대변인실은 9월 1일부터 누리집 메인에 전북교육 SNS 영역을 신설하겠다고 밝혔고, 교육협력과는 본청 111개·교육지원청 400개를 합쳐 511개에 이르는 각종 위원회의 실태를 분석해 9월 점검 결과를 안내하고 유사 위원회를 자율 통폐합하겠다고 보고했다. 중등교육과는 초등교육과와 협의해 9월 중 교사 인사상 우대 방안 TF를 구성하기로 했다. 정책기획과는 교육감 취임 4개월 이내 확정해야 하는 제20대 공약사업 실천계획 수립을 안내하며, 담당자 개인이 아닌 부서 업무로 인식해 실무 TF를 꾸려 달라고 요청했다. 학생 자살예방·심리정서 지원과 관련해 교육감은 '아이들의 생명을 지키는 것이 1번 임무'라며 회의 중 가장 강한 어조로 일선 학교의 경각심을 주문했다. 그밖에 전북교육인권센터의 교권·학폭 전담 변호사 선임, 전국기능경기대회 85명 참가, 항공 마일리지 480만 원 상당 기부 등이 보고됐다.",
+      "directiveCount": 8,
+      "depts": [
+        "교육협력과",
+        "전북교육인권센터",
+        "정책기획과",
+        "중등교육과",
+        "학생생활과"
+      ]
+    },
+    {
+      "id": "2026-W33",
+      "title": "2026년 8월 2주 주간정책회의",
+      "date": "2026-08-10",
+      "videoId": "aafuKp5am5Q",
+      "postId": "1162511",
+      "postUrl": "https://www.jbe.go.kr/board/view.jbe?boardId=BBS_0000681&menuCd=DOM_000000507001000000&paging=ok&startPage=1&searchOperation=AND&dataSid=1162511",
+      "durationSec": 3405,
+      "hasTranscript": true,
+      "cueCount": 1287,
+      "charCount": 21633,
+      "captionSource": "yt-dlp/json3",
+      "hasSummary": true,
+      "summary": "교육감은 9월 1일자 인사를 단행했음을 알리며 인수인계에 빈틈이 없도록 당부하는 것으로 회의를 열었다. 미래교육과는 AI 공문 자동배부 시스템 'K뚝백'을 이날부터 본청에 적용했다고 보고했다. 한 달 시범운영에서 자동배부율이 80%에서 90% 이상으로 올라갔고 16개 시도교육청 중 처음이다. 교육감은 조직 20% 삭감의 근거가 바로 이런 AI 활용이라며 행정 라인의 적극적 도입을 지시했다. 예산과 추경 보고에서는 당초 100억 규모로 예상한 요청이 700억으로 들어왔음에도 교육감이 '주저주저하고 있다'며 더 적극적인 요청을 주문한 대목이 가장 강한 발언이었다. 중등교육과 보고 뒤에는 유치원부터 고등학교까지 학년 초에 공개수업 자원자를 공개 모집해 우수 사례를 승진·포상·해외연수로 연결하는 시스템을 반드시 구축하라는 구체적 지시가 나왔고, 계획을 다시 짜서 보고하기로 했다. 교육협력과의 거버넌스위원회 → 전북교육 원탁회의 전환 보고에는 형식적인 위원회는 다 없애라는 주문이 붙었다. 회의 말미에 교육감은 앞으로 보고할 때 이전 지시사항의 진행 상황을 반드시 언급하고, 지시받은 내용은 정책국장에게 먼저 전달해 체계를 세우자고 정리했다. 아울러 특별자치도 지위를 실질적으로 활용하기 위해 각 부서가 특례로 요청할 내용을 미리 파악해 달라고 요청했다.",
+      "directiveCount": 13,
+      "depts": [
+        "감사관실",
+        "교육협력과",
+        "대변인실",
+        "예산과",
+        "전 부서",
+        "전북교육인권센터",
+        "중등교육과",
+        "창의인재교육과"
+      ]
+    },
+    {
+      "id": "2026-W32",
+      "title": "2026년 8월 1주 주간정책회의",
+      "date": "2026-08-03",
+      "videoId": "8o8yDaeEMN0",
+      "postId": "1159172",
+      "postUrl": "https://www.jbe.go.kr/board/view.jbe?boardId=BBS_0000681&menuCd=DOM_000000507001000000&paging=ok&startPage=1&searchOperation=AND&dataSid=1159172",
+      "durationSec": 3592,
+      "hasTranscript": true,
+      "cueCount": 1233,
+      "charCount": 20992,
+      "captionSource": "yt-dlp/json3",
+      "hasSummary": false,
+      "summary": "",
+      "directiveCount": 0,
+      "depts": []
+    },
+    {
+      "id": "2026-W31",
+      "title": "2026년 7월 5주 주간정책회의",
+      "date": "2026-07-28",
+      "videoId": "1ldblc3NRjk",
+      "postId": "1156841",
+      "postUrl": "https://www.jbe.go.kr/board/view.jbe?boardId=BBS_0000681&menuCd=DOM_000000507001000000&paging=ok&startPage=1&searchOperation=AND&dataSid=1156841",
+      "durationSec": 3421,
+      "hasTranscript": true,
+      "cueCount": 1192,
+      "charCount": 20296,
+      "captionSource": "yt-dlp/json3",
+      "hasSummary": false,
+      "summary": "",
+      "directiveCount": 0,
+      "depts": []
+    }
+  ]
+}

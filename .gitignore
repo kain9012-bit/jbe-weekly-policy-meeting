@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Node / 빌드 산출물
+node_modules/
+dist/
+_site/
+
+# 비밀값
+.env
+.env.local
+*.cookies.txt
+
+# 수집 중 생긴 임시 자막 파일 (data/ 안의 결과물은 커밋한다)
+/tmp/
+*.srt
+
+# 단, 테스트 픽스처는 반드시 커밋한다
+!collector/tests/fixture_captions.json3
+!collector/tests/fixture_captions.vtt

@@ -1,0 +1,306 @@
+/* Pretendard — KRDS 표준 본문 서체 (@import는 다른 규칙보다 앞서야 한다) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css");
+@import "tailwindcss";
+
+/* ============================================================
+   KRDS(대한민국 디지털 정부 디자인시스템) 토큰
+   출처: https://github.com/KRDS-uiux/krds-uiux
+        resources/css/token/krds_tokens.css
+   ============================================================ */
+:root {
+  /* ---- Primary (파랑) ---- */
+  --krds-primary-5:  #ecf2fe;
+  --krds-primary-10: #d8e5fd;
+  --krds-primary-20: #b1cefb;
+  --krds-primary-30: #86aff9;
+  --krds-primary-40: #4c87f6;
+  --krds-primary-50: #256ef4;
+  --krds-primary-60: #0b50d0;
+  --krds-primary-70: #083891;
+  --krds-primary-80: #052561;
+  --krds-primary-90: #03163a;
+
+  /* ---- Secondary (남색) ---- */
+  --krds-secondary-5:  #eef2f7;
+  --krds-secondary-10: #d6e0eb;
+  --krds-secondary-20: #bacbde;
+  --krds-secondary-30: #90b0d5;
+  --krds-secondary-40: #6b96c7;
+  --krds-secondary-50: #346fb2;
+  --krds-secondary-60: #1c589c;
+  --krds-secondary-70: #063a74;
+  --krds-secondary-80: #052b57;
+
+  /* ---- Gray ---- */
+  --krds-gray-0:   #ffffff;
+  --krds-gray-5:   #f4f5f6;
+  --krds-gray-10:  #e6e8ea;
+  --krds-gray-20:  #cdd1d5;
+  --krds-gray-30:  #b1b8be;
+  --krds-gray-40:  #8a949e;
+  --krds-gray-50:  #6d7882;
+  --krds-gray-60:  #58616a;
+  --krds-gray-70:  #464c53;
+  --krds-gray-80:  #33363d;
+  --krds-gray-90:  #1e2124;
+  --krds-gray-95:  #131416;
+
+  /* ---- 상태색 ---- */
+  --krds-danger-5:  #fdefec;  --krds-danger-10: #fcdfd9;
+  --krds-danger-50: #de3412;  --krds-danger-60: #bd2c0f;
+  --krds-warning-5:  #fff3db; --krds-warning-10: #ffe0a3;
+  --krds-warning-50: #9e6a00; --krds-warning-60: #8a5c00;
+  --krds-success-5:  #eaf6ec; --krds-success-10: #d8eedd;
+  --krds-success-50: #228738; --krds-success-60: #267337;
+  --krds-info-5:  #e7f4fe;    --krds-info-10: #d3ebfd;
+  --krds-info-50: #0b78cb;    --krds-info-60: #096ab3;
+  --krds-point-5:  #fbeff0;   --krds-point-10: #f5d6d9;
+  --krds-point-50: #d63d4a;   --krds-point-60: #ab2b36;
+}
+
+/* ============================================================
+   Tailwind 기본 팔레트를 KRDS 값으로 치환한다.
+   컴포넌트의 유틸리티 클래스는 그대로 두고 색만 바뀌게 하는 방식.
+   ============================================================ */
+@theme {
+  /* 본문 서체 */
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system,
+               "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: "Pretendard Variable", ui-monospace, SFMono-Regular, monospace;
+
+  /* KRDS 타이포 스케일 (본문 17px 기준) */
+  --text-xs:   0.8125rem;  /* 13px · body-xsmall */
+  --text-sm:   0.9375rem;  /* 15px · body-small  */
+  --text-base: 1.0625rem;  /* 17px · body-medium */
+  --text-lg:   1.1875rem;  /* 19px · heading-small */
+  --text-xl:   1.375rem;   /* 22px */
+  --text-2xl:  1.5rem;     /* 24px · heading-medium */
+  --text-3xl:  2rem;       /* 32px · heading-large */
+  --text-4xl:  2.5rem;     /* 40px · heading-xlarge */
+  --text-5xl:  3.6rem;     /* display-small */
+
+  /* 모서리 (KRDS 4·6·8·12) */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  /* ---- 회색: slate → KRDS gray ---- */
+  --color-slate-50:  #f4f5f6;
+  --color-slate-100: #e6e8ea;
+  --color-slate-200: #cdd1d5;
+  --color-slate-300: #b1b8be;
+  --color-slate-400: #8a949e;
+  --color-slate-500: #6d7882;
+  --color-slate-600: #58616a;
+  --color-slate-700: #464c53;
+  --color-slate-800: #33363d;
+  --color-slate-900: #1e2124;
+  --color-slate-950: #131416;
+
+  /* gray/zinc/neutral 계열도 같은 값으로 (컴포넌트가 섞어 쓰는 경우 대비) */
+  --color-gray-50:  #f4f5f6;
+  --color-gray-100: #e6e8ea;
+  --color-gray-200: #cdd1d5;
+  --color-gray-300: #b1b8be;
+  --color-gray-400: #8a949e;
+  --color-gray-500: #6d7882;
+  --color-gray-600: #58616a;
+  --color-gray-700: #464c53;
+  --color-gray-800: #33363d;
+  --color-gray-900: #1e2124;
+  --color-gray-950: #131416;
+
+  /* ---- 파랑: blue → KRDS primary ---- */
+  --color-blue-50:  #ecf2fe;
+  --color-blue-100: #d8e5fd;
+  --color-blue-200: #b1cefb;
+  --color-blue-300: #86aff9;
+  --color-blue-400: #4c87f6;
+  --color-blue-500: #256ef4;
+  --color-blue-600: #256ef4;
+  --color-blue-700: #0b50d0;
+  --color-blue-800: #083891;
+  --color-blue-900: #052561;
+  --color-blue-950: #03163a;
+
+  /* ---- 남색: indigo/violet → KRDS secondary ---- */
+  --color-indigo-50:  #eef2f7;
+  --color-indigo-100: #d6e0eb;
+  --color-indigo-200: #bacbde;
+  --color-indigo-300: #90b0d5;
+  --color-indigo-400: #6b96c7;
+  --color-indigo-500: #346fb2;
+  --color-indigo-600: #1c589c;
+  --color-indigo-700: #063a74;
+  --color-indigo-800: #052b57;
+  --color-indigo-900: #031f3f;
+
+  /* ---- 초록: emerald/green → KRDS success ---- */
+  --color-emerald-50:  #eaf6ec;
+  --color-emerald-100: #d8eedd;
+  --color-emerald-200: #d8eedd;
+  --color-emerald-300: #7bbb8a;
+  --color-emerald-400: #4aa35f;
+  --color-emerald-500: #228738;
+  --color-emerald-600: #267337;
+  --color-emerald-700: #1d5c2c;
+  --color-emerald-800: #164522;
+  --color-emerald-900: #0f2e17;
+  --color-green-50:  #eaf6ec;
+  --color-green-100: #d8eedd;
+  --color-green-500: #228738;
+  --color-green-600: #267337;
+  --color-green-700: #1d5c2c;
+
+  /* ---- 노랑: amber/yellow → KRDS warning ---- */
+  --color-amber-50:  #fff3db;
+  --color-amber-100: #ffe0a3;
+  --color-amber-200: #ffe0a3;
+  --color-amber-300: #d9a13d;
+  --color-amber-400: #b98200;
+  --color-amber-500: #9e6a00;
+  --color-amber-600: #8a5c00;
+  --color-amber-700: #714b00;
+  --color-amber-800: #573a00;
+  --color-amber-900: #3d2900;
+  --color-yellow-50:  #fff3db;
+  --color-yellow-100: #ffe0a3;
+  --color-yellow-500: #9e6a00;
+  --color-yellow-600: #8a5c00;
+
+  /* ---- 빨강: red/rose → KRDS danger ---- */
+  --color-red-50:  #fdefec;
+  --color-red-100: #fcdfd9;
+  --color-red-200: #fcdfd9;
+  --color-red-300: #f0a08c;
+  --color-red-400: #e86a4c;
+  --color-red-500: #de3412;
+  --color-red-600: #bd2c0f;
+  --color-red-700: #9c240c;
+  --color-red-800: #7a1c0a;
+  --color-red-900: #591407;
+  --color-rose-50:  #fbeff0;
+  --color-rose-100: #f5d6d9;
+  --color-rose-500: #d63d4a;
+  --color-rose-600: #ab2b36;
+
+  /* ---- 하늘: sky/cyan → KRDS information ---- */
+  --color-sky-50:  #e7f4fe;
+  --color-sky-100: #d3ebfd;
+  --color-sky-500: #0b78cb;
+  --color-sky-600: #096ab3;
+  --color-cyan-50:  #e7f4fe;
+  --color-cyan-100: #d3ebfd;
+  --color-cyan-500: #0b78cb;
+  --color-cyan-600: #096ab3;
+}
+
+/* ============================================================
+   기본 요소
+   ============================================================ */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  /* KRDS는 한글 가독성을 위해 자간을 약간 좁힌다 */
+  letter-spacing: -0.02em;
+  color: var(--krds-gray-90);
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  word-break: keep-all;   /* 한글 어절 단위 줄바꿈 */
+}
+
+/* 숫자는 자간을 좁히지 않는다 */
+.font-mono, .tabular-nums {
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 접근성: 포커스 표시 (KRDS 필수) ---- */
+:focus-visible {
+  outline: 2px solid var(--krds-primary-50);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---- 폼 컨트롤: KRDS 모양 ---- */
+input[type="text"],
+input[type="search"],
+select,
+textarea {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+select {
+  /* KRDS 셀렉트 화살표 */
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2358616a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  padding-right: 2.25rem !important;
+}
+select::-ms-expand { display: none; }
+
+/* ---- 검색어 강조 ---- */
+mark {
+  background: var(--krds-warning-10);
+  color: var(--krds-gray-90);
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 700;
+}
+
+/* 가로로 넘칠 때만 밀어서 보는 영역(탭 줄 등)은 스크롤바를 감춘다 */
+.no-scrollbar {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* 구형 Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* ---- 스크롤바 ---- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--krds-gray-5); }
+::-webkit-scrollbar-thumb {
+  background: var(--krds-gray-30);
+  border-radius: 6px;
+  border: 2px solid var(--krds-gray-5);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--krds-gray-40); }
+
+/* ---- 본문 바로가기 (KRDS 접근성 필수 요소) ---- */
+.krds-skip {
+  position: absolute;
+  left: 0; top: -100px;
+  z-index: 100;
+  width: 100%;
+  padding: 12px 0;
+  text-align: center;
+  background: var(--krds-gray-90);
+  color: #fff;
+  font-weight: 700;
+  transition: top 0.15s;
+}
+.krds-skip:focus {
+  top: 0;
+}
+
+/* ---- 애니메이션은 사용자 설정을 존중한다 ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

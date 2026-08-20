@@ -1,0 +1,53 @@
+name: 접근성 점검 (진단용)
+
+# 클라우드 러너(GitHub 제공, 미국 데이터센터)에서
+#   1) jbe.go.kr 게시판이 열리는지
+#   2) 유튜브 자막을 받을 수 있는지
+# 를 확인한다. 둘 다 통과하면 자체 호스팅 러너 없이도 운영할 수 있다.
+# 실측(2026-08): 유튜브는 "Sign in to confirm you're not a bot" 으로 차단됨.
+
+on:
+  workflow_dispatch:
+    inputs:
+      videoId:
+        description: "확인할 유튜브 영상 ID"
+        default: "MeLmER3fq_w"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests yt-dlp
+
+      - name: 게시판 접근
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import sys; sys.path.insert(0, "collector")
+          import board
+          posts = board.fetch_list()
+          print(f"OK 게시글 {len(posts)}건")
+          for p in posts[:5]:
+              print(" -", p.date, p.title, p.post_id)
+          PY
+
+      - name: 유튜브 자막 접근
+        continue-on-error: true
+        run: |
+          yt-dlp --skip-download --list-subs \
+            "https://www.youtube.com/watch?v=${{ inputs.videoId }}"
+
+      - name: 자막 실제 추출 시도
+        continue-on-error: true
+        run: |
+          python collector/fetch_transcripts.py --video "${{ inputs.videoId }}" --srt /tmp/probe.srt
+          wc -l /tmp/probe.srt
+
+      - name: 결과 안내
+        run: |
+          echo "세 단계 모두 성공했다면 collect.yml 의 runs-on 을 ubuntu-latest 로 바꿔도 됩니다."
+          echo "하나라도 실패했다면 자체 호스팅 러너(사무실 PC)를 그대로 사용하세요."
