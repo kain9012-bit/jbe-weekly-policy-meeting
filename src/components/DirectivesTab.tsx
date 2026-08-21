@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ListChecks, RotateCcw } from 'lucide-react';
 import type { Directive, IndexDoc, MeetingDoc } from '../types';
 import { Badge, EmptyState, Quote, SectionTitle, TimeLink } from './Ui';
-import { highlight, korDate } from '../lib/util';
+import { hasDept, highlight, korDate, splitDepts, sortDepts } from '../lib/util';
 
 interface Props {
   index: IndexDoc;
@@ -45,8 +45,10 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
     [all],
   );
 
+  // '교육협력과 / 교육지원청' 을 통째로 한 항목으로 두면, 교육협력과를 고른
+  // 사람에게 그 건이 안 보인다. 쪼개서 개별 부서로 만든다.
   const depts = useMemo(
-    () => [...new Set(rows.map((r) => r.dept).filter(Boolean))].sort(),
+    () => sortDepts(rows.flatMap((r) => splitDepts(r.dept))),
     [rows],
   );
   const types = useMemo(
@@ -63,7 +65,7 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
     const k = q.trim().toLowerCase();
     return traced
       .filter(({ row, trace }) => {
-        if (dept !== 'ALL' && row.dept !== dept) return false;
+        if (dept !== 'ALL' && !hasDept(row.dept, dept)) return false;
         if (type !== 'ALL' && (row.type || '지시') !== type) return false;
         if (status === 'open' && trace) return false;
         if (status === 'reported' && !trace) return false;
@@ -184,7 +186,9 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
             >
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge tone="blue">{row.dept || '전 부서'}</Badge>
+                  {(splitDepts(row.dept).length ? splitDepts(row.dept) : ['전 부서']).map((d) => (
+                    <Badge key={d} tone="blue">{d}</Badge>
+                  ))}
                   <Badge>{row.type || '지시'}</Badge>
                   {row.due && <Badge tone="amber">{row.due}</Badge>}
                   <span className="text-xs text-slate-500">{korDate(row.meeting.date)}</span>

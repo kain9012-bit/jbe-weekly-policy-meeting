@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import type { IndexDoc, MeetingDoc, TranscriptDoc } from '../types';
 import { Badge, EmptyState, SectionTitle, TimeLink } from './Ui';
-import { highlight, korDate } from '../lib/util';
+import { hasDept, highlight, korDate, splitDepts, sortDepts } from '../lib/util';
 
 interface Props {
   index: IndexDoc;
@@ -66,17 +66,17 @@ export const SearchTab: React.FC<Props> = ({
       if (m) {
         if (scope === 'all' || scope === '안건')
           for (const a of m.agenda)
-            if ((dept === 'ALL' || a.dept === dept) && has(a.topic, a.gist))
+            if ((dept === 'ALL' || hasDept(a.dept, dept)) && has(a.topic, a.gist))
               out.push({ ...base, kind: '안건', dept: a.dept, t: a.t, title: a.topic, body: a.gist });
 
         if (scope === 'all' || scope === '지시')
           for (const d of m.directives)
-            if ((dept === 'ALL' || d.dept === dept) && has(d.text, d.quote))
+            if ((dept === 'ALL' || hasDept(d.dept, dept)) && has(d.text, d.quote))
               out.push({ ...base, kind: '지시', dept: d.dept, t: d.t, title: d.text, body: d.quote });
 
         if (scope === 'all' || scope === '보고')
           for (const f of m.followups)
-            if ((dept === 'ALL' || f.dept === dept) && has(f.report, f.quote))
+            if ((dept === 'ALL' || hasDept(f.dept, dept)) && has(f.report, f.quote))
               out.push({ ...base, kind: '보고', dept: f.dept, t: f.t, title: f.report, body: f.quote });
       }
 
@@ -91,14 +91,15 @@ export const SearchTab: React.FC<Props> = ({
     return out.sort((a, b) => b.meetingDate.localeCompare(a.meetingDate) || a.t - b.t);
   }, [q, dept, scope, index, meetings, transcripts]);
 
+  // 한 건이 여러 부서에 걸릴 수 있다. 쪼개서 개별 부서로 목록을 만든다.
   const depts = useMemo(() => {
-    const s = new Set<string>();
+    const s: string[] = [];
     Object.values(meetings).forEach((m) => {
-      m.agenda.forEach((a) => a.dept && s.add(a.dept));
-      m.directives.forEach((d) => d.dept && s.add(d.dept));
-      m.followups.forEach((f) => f.dept && s.add(f.dept));
+      m.agenda.forEach((a) => s.push(...splitDepts(a.dept)));
+      m.directives.forEach((d) => s.push(...splitDepts(d.dept)));
+      m.followups.forEach((f) => s.push(...splitDepts(f.dept)));
     });
-    return [...s].sort();
+    return sortDepts(s);
   }, [meetings]);
 
   const loadedTranscripts = Object.keys(transcripts).length;
@@ -168,7 +169,7 @@ export const SearchTab: React.FC<Props> = ({
                                           hover:border-blue-600 transition-colors">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge tone={KIND_TONE[h.kind]}>{h.kind}</Badge>
-                  {h.dept && <Badge tone="blue">{h.dept}</Badge>}
+                  {splitDepts(h.dept).map((d) => <Badge key={d} tone="blue">{d}</Badge>)}
                   <span className="text-xs text-slate-500">
                     {h.meetingTitle} · {korDate(h.meetingDate)}
                   </span>

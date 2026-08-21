@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, ChevronRight, Download } from 'lucide-react';
 import type { ActiveTab, IndexDoc, MeetingDoc } from '../types';
 import { Badge, EmptyState, Quote, SampleNotice, SectionTitle, TimeLink } from './Ui';
-import { duration, korDate } from '../lib/util';
+import { duration, korDate, splitDepts } from '../lib/util';
 
 interface Props {
   index: IndexDoc;
@@ -156,7 +156,9 @@ export const MeetingTab: React.FC<Props> = ({
                 {meeting.followups.map((f, i) => (
                   <div key={i} className="bg-white rounded-lg border border-slate-200 p-4 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge tone="blue">{f.dept || '부서 미상'}</Badge>
+                      {(splitDepts(f.dept).length ? splitDepts(f.dept) : ['부서 미상']).map((d) => (
+                        <Badge key={d} tone="blue">{d}</Badge>
+                      ))}
                       <Badge tone={progressTone(f.progress)}>{f.progress}</Badge>
                       <TimeLink videoId={meeting.videoId} t={f.t} />
                     </div>
@@ -178,7 +180,9 @@ export const MeetingTab: React.FC<Props> = ({
                   <div key={a.seq} className="bg-white rounded-lg border border-slate-200 p-4 space-y-1.5
                                               hover:border-blue-600 transition-colors">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge tone="blue">{a.dept || '부서 미상'}</Badge>
+                      {(splitDepts(a.dept).length ? splitDepts(a.dept) : ['부서 미상']).map((d) => (
+                        <Badge key={d} tone="blue">{d}</Badge>
+                      ))}
                       <span className="font-bold text-slate-900">{a.topic}</span>
                       <TimeLink videoId={meeting.videoId} t={a.t} />
                     </div>
@@ -200,7 +204,9 @@ export const MeetingTab: React.FC<Props> = ({
                 {meeting.directives.map((d) => (
                   <div key={d.id} className="bg-white rounded-lg border border-slate-200 p-4 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge tone="blue">{d.dept || '전 부서'}</Badge>
+                      {(splitDepts(d.dept).length ? splitDepts(d.dept) : ['전 부서']).map((x) => (
+                        <Badge key={x} tone="blue">{x}</Badge>
+                      ))}
                       <Badge>{d.type || '지시'}</Badge>
                       {d.due && <Badge tone="amber">{d.due}</Badge>}
                       <TimeLink videoId={meeting.videoId} t={d.t} />

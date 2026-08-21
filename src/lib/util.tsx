@@ -53,6 +53,43 @@ export function highlight(text: string, query: string): ReactNode[] {
   return out;
 }
 
+// ── 부서 ──────────────────────────────────────────────────────────────────
+
+/**
+ * 한 지시가 여러 부서에 걸리는 일이 흔하다("교육협력과 / 교육지원청").
+ * 데이터에는 한 문자열로 들어 있지만, **화면에서는 반드시 쪼개 다뤄야 한다.**
+ * 통째로 두면 필터 목록에 `교육협력과 / 교육지원청` 같은 항목이 따로 생겨서,
+ * 교육협력과를 고른 사람에게 그 건이 안 보인다.
+ */
+const DEPT_ALIAS: Record<string, string> = {
+  '도교육청 각 부서': '전 부서',
+  '본청 전 부서': '전 부서',
+};
+
+/** 여러 기관을 한꺼번에 가리키는 말 — 목록에서 개별 부서 뒤로 보낸다. */
+const COLLECTIVE = ['전 부서', '모든 기관', '교육지원청', '직속기관'];
+
+export function splitDepts(value?: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(/[/,·]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => DEPT_ALIAS[s] ?? s);
+}
+
+/** 이 건이 해당 부서에 걸리는가 */
+export function hasDept(value: string | null | undefined, want: string): boolean {
+  return splitDepts(value).includes(want);
+}
+
+/** 필터 목록용 — 개별 부서를 가나다순으로, 여러 기관을 뜻하는 말은 맨 뒤로 */
+export function sortDepts(list: Iterable<string>): string[] {
+  const uniq = [...new Set(list)].filter(Boolean);
+  const rank = (d: string) => (COLLECTIVE.includes(d) ? 1 : 0);
+  return uniq.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, 'ko'));
+}
+
 /** 회차 진행 상태 — 자막 → 교정·화자 → 요약 순으로 쌓인다 */
 export type Stage = 'done' | 'refined' | 'transcript' | 'pending';
 

@@ -19,7 +19,6 @@ export const TranscriptTab: React.FC<Props> = ({
 }) => {
   const [q, setQ] = useState('');
   const [view, setView] = useState<View>('lines');
-  const [showRaw, setShowRaw] = useState(false);
   const [block, setBlock] = useState('ALL');
   const [copied, setCopied] = useState(false);
 
@@ -91,8 +90,6 @@ export const TranscriptTab: React.FC<Props> = ({
     URL.revokeObjectURL(a.href);
   };
 
-  const correctedCount = transcript ? transcript.cues.filter((c) => c.raw).length : 0;
-
   return (
     <div className="space-y-5 pb-12">
       {/* ── 조작 줄 ── */}
@@ -156,19 +153,6 @@ export const TranscriptTab: React.FC<Props> = ({
 
         <button
           type="button"
-          aria-pressed={showRaw}
-          onClick={() => setShowRaw((v) => !v)}
-          className={`h-11 px-3.5 rounded-md border text-sm font-bold transition-colors ${
-            showRaw
-              ? 'bg-blue-600 border-blue-600 text-white'
-              : 'bg-white border-slate-300 text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          자막 원문 {correctedCount > 0 && `(${correctedCount})`}
-        </button>
-
-        <button
-          type="button"
           onClick={copyAll}
           disabled={!transcript}
           className="h-11 px-3.5 rounded-md border border-slate-300 bg-white text-sm font-bold
@@ -219,13 +203,8 @@ export const TranscriptTab: React.FC<Props> = ({
             <Badge tone="blue">{transcript.id}</Badge>
             <Badge>{korDate(transcript.date)}</Badge>
             <Badge>{duration(transcript.durationSec)}</Badge>
-            <Badge>{transcript.cueCount.toLocaleString()}줄 · {transcript.charCount.toLocaleString()}자</Badge>
-            {correctedCount > 0 && <Badge tone="green">교정 {correctedCount}문장</Badge>}
-            {transcript.turnCount ? (
-              <Badge tone="green">발언 {transcript.turnCount}개 · 부서 확인 {transcript.speakerTurns ?? 0}</Badge>
-            ) : (
-              <Badge tone="amber">발언 단위 정리 전</Badge>
-            )}
+            {/* 줄 수·글자 수·'부서 확인' 같은 내부 수치는 읽는 사람이 쓸 데가 없다. */}
+            {transcript.turnCount ? <Badge>발언 {transcript.turnCount}개</Badge> : null}
             <a
               href={transcript.videoUrl}
               target="_blank"
@@ -273,25 +252,9 @@ export const TranscriptTab: React.FC<Props> = ({
                           {turn.map((c, i) => (
                             <p
                               key={`${c.t}-${i}`}
-                              className={`text-slate-800 leading-[1.85] ${
-                                c.raw ? 'border-b border-dashed border-slate-300' : ''
-                              }`}
+                              className="text-slate-800 leading-[1.85]"
                             >
-                              {c.fromCaption && (
-                                <span
-                                  className="mr-1.5 align-middle text-[0.7rem] font-bold text-amber-700
-                                             bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
-                                  title="음성이 작아 받아쓰기가 실패해, 유튜브 자막에서 가져온 부분입니다"
-                                >
-                                  자막 출처
-                                </span>
-                              )}
                               {highlight(c.text, q)}
-                              {showRaw && c.raw && (
-                                <span className="block text-xs text-slate-400 mt-0.5">
-                                  자막 원문: {c.raw}
-                                </span>
-                              )}
                             </p>
                           ))}
                         </div>
@@ -316,9 +279,16 @@ export const TranscriptTab: React.FC<Props> = ({
             )}
           </div>
 
+          {/*
+            예전에는 '자막 원문' 토글과 '자막 출처' 표시가 있었지만 뺐다.
+            보여주던 '원문' 도 기계의 추측이라 대조해 봐야 확인되는 게 없었고,
+            일부 문장에만 출처를 표시하면 나머지는 검증됐다는 착각을 준다.
+            회의록 전체가 기계가 받아쓴 것이다. 확인 경로는 모든 줄에 붙어 있는
+            타임스탬프 → 영상 하나뿐이고, 그 사실만 아래에 적는다.
+          */}
           <p className="text-xs text-slate-400 px-1">
-            자막 경로 {transcript.source} · 받은 시각 {transcript.fetchedAt?.slice(0, 16).replace('T', ' ')}
-            {correctedCount > 0 && ' · 밑줄 친 문장은 사전으로 바로잡은 곳입니다'}
+            이 회의록은 영상의 음성을 기계가 받아쓴 것입니다. 사람이 확인하지 않은 문장이 섞여 있을 수 있으니,
+            정확한 내용은 왼쪽 시각을 눌러 영상에서 확인하세요.
           </p>
         </>
       )}
