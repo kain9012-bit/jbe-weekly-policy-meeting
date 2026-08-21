@@ -197,6 +197,7 @@ export default function App() {
                 meetings={meetings}
                 transcripts={transcripts}
                 initialQuery={searchQuery}
+                onNavigate={navigate}
                 onConsumeInitialQuery={() => setSearchQuery('')}
                 loading={detailLoading}
               />

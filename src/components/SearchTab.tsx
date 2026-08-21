@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
-import type { IndexDoc, MeetingDoc, TranscriptDoc } from '../types';
+import { Search, FileText } from 'lucide-react';
+import type { IndexDoc, MeetingDoc, Navigate, TranscriptDoc } from '../types';
 import { Badge, EmptyState, SectionTitle, TimeLink } from './Ui';
 import { hasDept, highlight, korDate, splitDepts, sortDepts } from '../lib/util';
 
@@ -11,6 +11,7 @@ interface Props {
   initialQuery: string;
   onConsumeInitialQuery: () => void;
   loading: boolean;
+  onNavigate: Navigate;
 }
 
 type Kind = '안건' | '지시' | '보고' | '발언';
@@ -18,6 +19,8 @@ interface Hit {
   kind: Kind;
   dept: string;
   t: number;
+  /** 회의록 전문으로 이동할 때 필요하다 */
+  meetingId: string;
   videoId: string;
   meetingTitle: string;
   meetingDate: string;
@@ -30,7 +33,7 @@ const KIND_TONE: Record<Kind, 'blue' | 'slate' | 'green' | 'amber'> = {
 };
 
 export const SearchTab: React.FC<Props> = ({
-  index, meetings, transcripts, initialQuery, onConsumeInitialQuery, loading,
+  index, meetings, transcripts, initialQuery, onConsumeInitialQuery, loading, onNavigate,
 }) => {
   const [q, setQ] = useState(initialQuery);
   const [dept, setDept] = useState('ALL');
@@ -60,6 +63,7 @@ export const SearchTab: React.FC<Props> = ({
       if (round !== 'ALL' && entry.id !== round) continue;
       const m = meetings[entry.id];
       const base = {
+        meetingId: entry.id,
         meetingTitle: entry.title,
         meetingDate: entry.date,
         videoId: entry.videoId,
@@ -111,23 +115,10 @@ export const SearchTab: React.FC<Props> = ({
       <SectionTitle desc="안건·지시·보고는 물론 회의 발언 전문까지 함께 찾습니다">통합검색</SectionTitle>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[260px]">
-          <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="예: 위원회, 창업 동아리, 변호사, 학부모"
-            aria-label="회의 내용 검색"
-            className="w-full h-12 pl-11 pr-3 rounded-md border border-slate-300 bg-white
-                       text-slate-900 placeholder-slate-400 outline-none focus:border-blue-600"
-          />
-        </div>
-
         <select
           value={round} onChange={(e) => setRound(e.target.value)}
           aria-label="회의"
-          className="h-12 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
+          className="h-11 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
         >
           <option value="ALL">전체 회의</option>
           {index.meetings.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
@@ -136,7 +127,7 @@ export const SearchTab: React.FC<Props> = ({
         <select
           value={dept} onChange={(e) => setDept(e.target.value)}
           aria-label="부서"
-          className="h-12 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
+          className="h-11 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
         >
           <option value="ALL">전체 부서</option>
           {depts.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -145,7 +136,7 @@ export const SearchTab: React.FC<Props> = ({
         <select
           value={scope} onChange={(e) => setScope(e.target.value as typeof scope)}
           aria-label="검색 범위"
-          className="h-12 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
+          className="h-11 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
         >
           <option value="all">전체</option>
           <option value="안건">안건만</option>
@@ -153,6 +144,19 @@ export const SearchTab: React.FC<Props> = ({
           <option value="보고">처리 결과만</option>
           <option value="발언">회의 발언만</option>
         </select>
+
+        <div className="relative flex-1 min-w-[260px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="예: 위원회, 창업 동아리, 변호사, 학부모"
+            aria-label="회의 내용 검색"
+            className="w-full h-11 pl-9 pr-3 rounded-md border border-slate-300 bg-white text-sm
+                       text-slate-900 placeholder-slate-400 outline-none focus:border-blue-600"
+          />
+        </div>
       </div>
 
       {loading && <p className="text-sm text-slate-500" role="status">자료를 불러오는 중입니다…</p>}
@@ -185,6 +189,16 @@ export const SearchTab: React.FC<Props> = ({
                     {h.meetingTitle} · {korDate(h.meetingDate)}
                   </span>
                   <TimeLink videoId={h.videoId} t={h.t} />
+                  {/* 영상 말고 회의록에서 그 대목을 읽고 싶을 때 */}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('transcript', undefined, h.meetingId, h.t)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-700
+                               hover:underline underline-offset-4"
+                  >
+                    <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                    회의록에서 보기
+                  </button>
                 </div>
                 {h.title && (
                   <p className="font-bold text-slate-900 leading-snug">{highlight(h.title, q)}</p>

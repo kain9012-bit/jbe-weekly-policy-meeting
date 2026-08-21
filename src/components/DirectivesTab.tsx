@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ListChecks, RotateCcw, FileText } from 'lucide-react';
+import { ListChecks, RotateCcw, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import type { Directive, IndexDoc, MeetingDoc, Navigate } from '../types';
 import { Badge, EmptyState, Quote, SectionTitle, TimeLink } from './Ui';
 import { hasDept, highlight, korDate, splitDepts, sortDepts } from '../lib/util';
@@ -36,6 +36,7 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading, onNav
   const [status, setStatus] = useState<'ALL' | 'open' | 'reported'>('ALL');
   const [q, setQ] = useState('');
   const [showQuote, setShowQuote] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const all = useMemo(
     () => index.meetings.map((m) => meetings[m.id]).filter(Boolean) as MeetingDoc[],
@@ -190,13 +191,14 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading, onNav
         </EmptyState>
       ) : (
         <div className="space-y-2">
-          {view.map(({ row, trace }) => (
+          {view.map(({ row, trace }) => {
+            const open = expanded === row.id;
+            return (
             <article
               key={row.id}
-              className="bg-white rounded-lg border border-slate-200 p-5 hover:border-blue-600
-                         transition-colors flex flex-col md:flex-row md:items-start gap-4"
+              className="bg-white rounded-lg border border-slate-200 hover:border-blue-600 transition-colors"
             >
-              <div className="flex-1 min-w-0 space-y-2">
+              <div className="p-5 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   {(splitDepts(row.dept).length ? splitDepts(row.dept) : ['전 부서']).map((d) => (
                     <Badge key={d} tone="blue">{d}</Badge>
@@ -215,26 +217,73 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading, onNav
                     <FileText className="w-3.5 h-3.5" aria-hidden="true" />
                     회의록에서 보기
                   </button>
+                  <span className="ml-auto">
+                    {trace
+                      ? <Badge tone="green">처리 결과 보고됨</Badge>
+                      : <Badge tone="amber">이후 보고 확인 안 됨</Badge>}
+                  </span>
                 </div>
+
                 <p className="text-base font-bold text-slate-900 leading-snug">
                   {highlight(row.text, q)}
                 </p>
                 {showQuote && row.quote && <Quote>{row.quote}</Quote>}
-              </div>
 
-              <div className="md:w-56 shrink-0 md:text-right space-y-1">
-                {trace ? (
-                  <>
-                    <Badge tone="green">처리 결과 보고됨</Badge>
-                    <p className="text-xs text-slate-500">{korDate(trace.meeting.date)} 회의</p>
-                    <p className="text-xs text-slate-600 line-clamp-3">{trace.followup.report}</p>
-                  </>
-                ) : (
-                  <Badge tone="amber">이후 보고 확인 안 됨</Badge>
+                {/*
+                  처리 결과를 카드 오른쪽 좁은 칸에 줄여 넣으면 읽을 수가 없다.
+                  펼쳐서 아래에 온전히 보여주고, 그 보고가 나온 자리로 갈 수 있게 한다.
+                */}
+                {trace && (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(open ? null : row.id)}
+                    aria-expanded={open}
+                    aria-controls={`fu-${row.id}`}
+                    className="inline-flex items-center gap-1 text-sm font-bold text-blue-700
+                               hover:underline underline-offset-4"
+                  >
+                    {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    처리 결과 {open ? '접기' : '보기'}
+                  </button>
                 )}
               </div>
+
+              {trace && open && (
+                <div
+                  id={`fu-${row.id}`}
+                  className="border-t border-slate-200 bg-slate-50 px-5 py-4 space-y-2 rounded-b-lg"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-slate-500">
+                      {korDate(trace.meeting.date)} 회의에서 보고
+                    </span>
+                    {(splitDepts(trace.followup.dept).length
+                      ? splitDepts(trace.followup.dept)
+                      : ['부서 미상']).map((d) => <Badge key={d} tone="blue">{d}</Badge>)}
+                    {trace.followup.progress && <Badge>{trace.followup.progress}</Badge>}
+                  </div>
+
+                  <p className="text-slate-800 leading-relaxed">{trace.followup.report}</p>
+                  {trace.followup.quote && <Quote>{trace.followup.quote}</Quote>}
+
+                  <div className="flex items-center gap-3 flex-wrap pt-1">
+                    <TimeLink videoId={trace.meeting.videoId} t={trace.followup.t} />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onNavigate('transcript', undefined, trace.meeting.id, trace.followup.t)}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-700
+                                 hover:underline underline-offset-4"
+                    >
+                      <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                      회의록에서 보기
+                    </button>
+                  </div>
+                </div>
+              )}
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
 
