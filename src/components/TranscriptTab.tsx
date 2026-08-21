@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Captions, Copy, Check, Download, Search } from 'lucide-react';
-import type { IndexDoc, TranscriptDoc } from '../types';
+import type { Cue, IndexDoc, TranscriptDoc } from '../types';
 import { Badge, EmptyState, SampleNotice, TimeLink } from './Ui';
 import { duration, highlight, korDate, mmss } from '../lib/util';
 
@@ -20,15 +20,42 @@ export const TranscriptTab: React.FC<Props> = ({
   const [q, setQ] = useState('');
   const [view, setView] = useState<View>('lines');
   const [showRaw, setShowRaw] = useState(false);
+  const [block, setBlock] = useState('ALL');
   const [copied, setCopied] = useState(false);
 
   const entry = index.meetings.find((m) => m.id === currentId);
 
+  /** 부서 보고 구간 목록 — 회의에 나온 순서대로 */
+  const blocks = useMemo(() => {
+    const seen: string[] = [];
+    for (const c of transcript?.cues ?? []) {
+      if (c.block && !seen.includes(c.block)) seen.push(c.block);
+    }
+    return seen;
+  }, [transcript]);
+
   const cues = useMemo(() => {
     if (!transcript) return [];
     const k = q.trim().toLowerCase();
-    return k ? transcript.cues.filter((c) => c.text.toLowerCase().includes(k)) : transcript.cues;
-  }, [transcript, q]);
+    return transcript.cues.filter(
+      (c) =>
+        (block === 'ALL' || c.block === block) &&
+        (!k || c.text.toLowerCase().includes(k)),
+    );
+  }, [transcript, q, block]);
+
+  /**
+   * 문장을 발언(문단) 단위로 다시 묶는다.
+   * 검색·구간 필터로 걸러진 뒤에도 문단이 유지되도록 여기서 묶는다.
+   */
+  const turns = useMemo(() => {
+    const out: Cue[][] = [];
+    for (const c of cues) {
+      if (c.turnStart || out.length === 0) out.push([]);
+      out[out.length - 1].push(c);
+    }
+    return out;
+  }, [cues]);
 
   const fullText = useMemo(() => {
     if (!transcript) return '';
@@ -83,6 +110,21 @@ export const TranscriptTab: React.FC<Props> = ({
             </option>
           ))}
         </select>
+
+        {blocks.length > 0 && (
+          <>
+            <label htmlFor="trBlock" className="sr-only">부서 보고 구간</label>
+            <select
+              id="trBlock"
+              value={block}
+              onChange={(e) => setBlock(e.target.value)}
+              className="h-11 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
+            >
+              <option value="ALL">전체 구간</option>
+              {blocks.map((b) => <option key={b} value={b}>{b} 보고</option>)}
+            </select>
+          </>
+        )}
 
         <div className="relative flex-1 min-w-[220px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
@@ -178,11 +220,11 @@ export const TranscriptTab: React.FC<Props> = ({
             <Badge>{korDate(transcript.date)}</Badge>
             <Badge>{duration(transcript.durationSec)}</Badge>
             <Badge>{transcript.cueCount.toLocaleString()}줄 · {transcript.charCount.toLocaleString()}자</Badge>
-            {correctedCount > 0 && <Badge tone="green">교정 {correctedCount}줄</Badge>}
-            {transcript.refinedAt ? (
-              <Badge tone="green">화자 {transcript.speakerTurns ?? 0}회 전환</Badge>
+            {correctedCount > 0 && <Badge tone="green">교정 {correctedCount}문장</Badge>}
+            {transcript.turnCount ? (
+              <Badge tone="green">발언 {transcript.turnCount}개 · 부서 확인 {transcript.speakerTurns ?? 0}</Badge>
             ) : (
-              <Badge tone="amber">교정·화자 미적용</Badge>
+              <Badge tone="amber">발언 단위 정리 전</Badge>
             )}
             <a
               href={transcript.videoUrl}
@@ -194,53 +236,83 @@ export const TranscriptTab: React.FC<Props> = ({
             </a>
           </div>
 
-          {q && (
+          {(q || block !== 'ALL') && (
             <p className="text-sm text-slate-600 px-1">
-              <strong className="text-blue-700 font-bold tabular-nums">{cues.length}</strong>줄에서 찾았습니다
+              <strong className="text-blue-700 font-bold tabular-nums">{cues.length}</strong>문장
+              {block !== 'ALL' && <> · {block} 보고 구간</>}
             </p>
           )}
 
           <div className="bg-white rounded-lg border border-slate-200 p-5">
-            {cues.length === 0 ? (
+            {turns.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">검색어와 맞는 발언이 없습니다.</p>
             ) : view === 'lines' ? (
-              <ol className="space-y-1">
-                {cues.map((c, i) => {
-                  // 화자는 바뀔 때만 적는다. 같은 사람이 이어 말하면 다시 쓰지 않는다.
-                  const turn = c.speaker && c.speaker !== cues[i - 1]?.speaker;
+              <div className="space-y-4">
+                {turns.map((turn, ti) => {
+                  const head = turn[0];
+                  // 구간이 바뀌는 자리에 '○○과 보고' 머리글을 넣는다.
+                  const newBlock = head.block && head.block !== turns[ti - 1]?.[0]?.block;
                   return (
-                    <li
-                      key={`${c.t}-${i}`}
-                      className={`grid grid-cols-[68px_1fr] gap-3 py-1.5 border-b border-slate-50 last:border-0 ${
-                        turn ? 'mt-3 pt-3 border-t border-slate-100' : ''
-                      }`}
-                    >
-                      <TimeLink videoId={transcript.videoId} t={c.t} />
-                      <div>
-                        {turn && (
-                          <p className="mb-0.5">
-                            <Badge tone={c.speaker === '교육감' ? 'amber' : 'blue'}>{c.speaker}</Badge>
-                          </p>
-                        )}
-                        <p className={`text-slate-800 leading-relaxed ${c.raw ? 'border-b border-dashed border-slate-300 inline' : ''}`}>
-                          {highlight(c.text, q)}
-                        </p>
-                        {showRaw && c.raw && (
-                          <p className="text-xs text-slate-400 mt-0.5">자막 원문: {c.raw}</p>
-                        )}
+                    <React.Fragment key={`${head.t}-${ti}`}>
+                      {newBlock && (
+                        <h3 className="flex items-center gap-2 pt-4 mt-2 border-t border-slate-200 first:border-0 first:mt-0 first:pt-0">
+                          <span className="text-sm font-bold text-blue-800">{head.block}</span>
+                          <span className="text-xs text-slate-400">보고 구간</span>
+                        </h3>
+                      )}
+                      <div className="grid grid-cols-[68px_1fr] gap-3">
+                        <TimeLink videoId={transcript.videoId} t={head.t} />
+                        <div className="min-w-0">
+                          {head.speaker && (
+                            <p className="mb-1">
+                              <Badge tone={head.speaker === '교육감' ? 'amber' : 'blue'}>
+                                {head.speaker}
+                              </Badge>
+                            </p>
+                          )}
+                          {turn.map((c, i) => (
+                            <p
+                              key={`${c.t}-${i}`}
+                              className={`text-slate-800 leading-[1.85] ${
+                                c.raw ? 'border-b border-dashed border-slate-300' : ''
+                              }`}
+                            >
+                              {c.fromCaption && (
+                                <span
+                                  className="mr-1.5 align-middle text-[0.7rem] font-bold text-amber-700
+                                             bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
+                                  title="음성이 작아 받아쓰기가 실패해, 유튜브 자막에서 가져온 부분입니다"
+                                >
+                                  자막 출처
+                                </span>
+                              )}
+                              {highlight(c.text, q)}
+                              {showRaw && c.raw && (
+                                <span className="block text-xs text-slate-400 mt-0.5">
+                                  자막 원문: {c.raw}
+                                </span>
+                              )}
+                            </p>
+                          ))}
+                        </div>
                       </div>
-                    </li>
+                    </React.Fragment>
                   );
                 })}
-              </ol>
+              </div>
             ) : (
-              <p className="text-slate-800 leading-[2] text-[1.0625rem]">
-                {cues.map((c, i) => (
-                  <React.Fragment key={`${c.t}-${i}`}>
-                    {highlight(c.text, q)}{' '}
-                  </React.Fragment>
+              <div className="space-y-3">
+                {turns.map((turn, ti) => (
+                  <p key={`${turn[0].t}-${ti}`} className="text-slate-800 leading-[2] text-[1.0625rem]">
+                    {turn[0].speaker && (
+                      <strong className="font-bold text-slate-900 mr-1.5">{turn[0].speaker}:</strong>
+                    )}
+                    {turn.map((c, i) => (
+                      <React.Fragment key={`${c.t}-${i}`}>{highlight(c.text, q)}{' '}</React.Fragment>
+                    ))}
+                  </p>
                 ))}
-              </p>
+              </div>
             )}
           </div>
 

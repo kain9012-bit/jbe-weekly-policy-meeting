@@ -7,8 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 TRANSCRIPTS_DIR = DATA_DIR / "transcripts"    # 1단계: 자막 원문 + 사전 교정
-REFINED_DIR = DATA_DIR / "refined"            # 1.5단계: LLM 문맥 교정 + 화자
-MEETINGS_DIR = DATA_DIR / "meetings"          # 2단계: LLM 요약
+REFINED_DIR = DATA_DIR / "refined"            # 1.5단계: 발언 단위 정리 + 사전 교정
+MEETINGS_DIR = DATA_DIR / "meetings"          # 2단계: 요약
+HUMAN_DIR = DATA_DIR / "human"                # 사람이 손으로 고친 교정·화자 (다시 돌려도 살아남는다)
 INDEX_PATH = DATA_DIR / "index.json"
 GLOSSARY_PATH = Path(__file__).resolve().parent / "glossary.json"
 

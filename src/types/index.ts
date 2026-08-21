@@ -1,11 +1,18 @@
 export type ActiveTab = 'home' | 'meeting' | 'transcript' | 'directives' | 'search';
 
-/** 자막 한 줄 */
+/** 자막 한 문장 */
 export interface Cue {
-  t: number;        // 시작 초
-  text: string;     // 교정된 문장
-  raw?: string;     // 교정 전 자막 원문 (바뀐 줄에만 있다)
-  speaker?: string; // 1.5단계에서 붙인 화자 (추정)
+  t: number;         // 시작 초
+  text: string;      // 교정된 문장
+  raw?: string;      // 교정 전 자막 원문 (바뀐 문장에만 있다)
+  /** 발언(문단)의 첫 문장인지 */
+  turnStart?: boolean;
+  /** 확인된 화자. 자기소개나 명확한 진행·지시 말투가 있을 때만 채운다. */
+  speaker?: string;
+  /** 이 발언이 속한 부서 보고 구간 */
+  block?: string;
+  /** 받아쓰기가 실패해 유튜브 자막에서 가져온 문장 (출처가 다르므로 표시한다) */
+  fromCaption?: boolean;
 }
 
 /** 1단계 산출물 — data/transcripts/<id>.json */
@@ -24,7 +31,11 @@ export interface TranscriptDoc {
   fetchedAt: string;
   glossaryHits?: { rule: string; count: number }[];
   cues: Cue[];
-  // 1.5단계(교정본)에만 있는 값
+  // 1.5단계(발언 단위 정리본)에만 있는 값
+  segmentedAt?: string;
+  turnCount?: number;
+  /** 받아쓰기가 실패해 유튜브 자막으로 메운 구간 수 */
+  captionFallbacks?: number;
   refinedAt?: string;
   refineModel?: string;
   chunkCount?: number;

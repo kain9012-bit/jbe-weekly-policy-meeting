@@ -13,20 +13,17 @@ interface Props {
 type Row = Directive & { meeting: MeetingDoc };
 
 /**
- * 이행 여부는 "이후 회차에 처리 결과 보고가 있었는가" 로 본다.
- *   확인   — LLM이 지시사항 id를 직접 연결한 경우
- *   추정   — 같은 부서가 이후 회차에서 보고한 기록만 있는 경우
- * 둘을 구분해 표시한다. 추정을 확인처럼 보이면 안 된다.
+ * 이행 여부는 "이후 회차에 그 지시를 지목한 처리 결과 보고가 있었는가" 로만 본다.
+ *
+ * 예전에는 '부서명이 같으면 관련 보고일 것' 이라는 추정도 함께 표시했는데,
+ * 근거가 부서 이름뿐이라 서로 다른 지시 세 건이 같은 보고 하나를 가리키는 식으로
+ * 어긋났다. 회의에서 실제로 오간 연결만 남긴다.
  */
 function traceFollowup(row: Row, all: MeetingDoc[]) {
   const later = all.filter((m) => m.date > row.meeting.date).sort((a, b) => a.date.localeCompare(b.date));
   for (const m of later) {
     const hit = m.followups.find((f) => f.matchedDirective === row.id);
-    if (hit) return { meeting: m, followup: hit, exact: true };
-  }
-  for (const m of later) {
-    const hit = m.followups.find((f) => f.dept && row.dept && f.dept === row.dept);
-    if (hit) return { meeting: m, followup: hit, exact: false };
+    if (hit) return { meeting: m, followup: hit };
   }
   return null;
 }
@@ -202,9 +199,7 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
               <div className="md:w-56 shrink-0 md:text-right space-y-1">
                 {trace ? (
                   <>
-                    <Badge tone={trace.exact ? 'green' : 'slate'}>
-                      {trace.exact ? '처리 결과 보고됨' : '같은 부서 보고 있음'}
-                    </Badge>
+                    <Badge tone="green">처리 결과 보고됨</Badge>
                     <p className="text-xs text-slate-500">{korDate(trace.meeting.date)} 회의</p>
                     <p className="text-xs text-slate-600 line-clamp-3">{trace.followup.report}</p>
                   </>
@@ -218,8 +213,8 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
       )}
 
       <p className="text-xs text-slate-400 px-1">
-        ‘같은 부서 보고 있음’은 지시와 보고를 직접 연결한 것이 아니라 부서가 같아 추정한 것입니다.
-        확정 판단은 타임스탬프를 눌러 원 영상으로 확인하세요.
+        ‘이후 보고 확인 안 됨’은 처리하지 않았다는 뜻이 아니라, 생중계된 회의에서 그 지시를 지목한
+        보고가 확인되지 않았다는 뜻입니다. 회의 밖에서 처리했거나 중계를 끄고 보고했을 수 있습니다.
       </p>
     </div>
   );
