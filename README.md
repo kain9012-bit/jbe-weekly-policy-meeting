@@ -1,5 +1,9 @@
 # 주간정책회의 브리핑
 
+### 🔗 **[jbe-weekly-policy-meeting.vercel.app](https://jbe-weekly-policy-meeting.vercel.app/)**
+
+<sub>같은 화면이 [GitHub Pages](https://kain9012-bit.github.io/jbe-weekly-policy-meeting/) 에도 올라갑니다.</sub>
+
 전북특별자치도교육청 [주간정책회의 게시판](https://www.jbe.go.kr/jbeducation/board/list.jbe?boardId=BBS_0000681&menuCd=DOM_000000507001000000&contentsSid=3249&cpath=%2Fjbeducation)에
 새 회의 영상이 올라오면, **영상의 오디오를 직접 받아쓰고 목소리로 화자를 갈라내** 회의록과
 지시사항을 정리해 웹으로 공개합니다. 유튜브 자동자막은 버리지 않고 **받아쓰기 누락을 잡는

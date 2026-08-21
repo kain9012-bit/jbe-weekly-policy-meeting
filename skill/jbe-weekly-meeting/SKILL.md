@@ -5,7 +5,8 @@ description: 전북특별자치도교육청 교육감 주간정책회의 영상�
 
 # 주간정책회의 정리
 
-저장소: `C:\work\jbe-weekly-policy-meeting` · 공개 웹: https://kain9012-bit.github.io/jbe-weekly-policy-meeting/
+저장소: `C:\work\jbe-weekly-policy-meeting`
+공개 웹: https://jbe-weekly-policy-meeting.vercel.app/ (같은 화면이 GitHub Pages 에도 배포됨)
 
 교육감이 매주 주관하는 주간정책회의는 유튜브로 생중계되고 게시판에 올라온다.
 이걸 **교육청 직원이 읽을 수 있는 회의록과 지시사항 트래커**로 바꾸는 작업이다.

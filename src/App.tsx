@@ -136,7 +136,11 @@ export default function App() {
     <div className="min-h-screen overflow-x-clip bg-white text-slate-800 font-sans antialiased flex flex-col selection:bg-blue-600 selection:text-white">
       <a href="#container" className="krds-skip">본문 바로가기</a>
 
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} updatedAt={index.updatedAt} />
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        latestDate={index.meetings[0]?.date ?? null}
+      />
 
       <main id="container" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading && (

@@ -17,17 +17,30 @@ if errorlevel 1 (
 )
 
 if not exist ".git" (
-  echo  [오류] 아직 git 저장소가 아닙니다. 아래를 한 번만 실행하세요.
-  echo.
-  echo    git init
-  echo    git add .
-  echo    git commit -m "first"
-  echo    git branch -M main
-  echo    git remote add origin https://github.com/kain9012-bit/jbe-weekly-policy-meeting.git
-  echo    git push -u origin main
+  echo  [오류] 아직 git 저장소가 아닙니다.
   echo.
   pause
   exit /b 1
+)
+
+rem 발행 전 검증. 여기서 걸리면 올리지 않는다.
+set "PY="
+where python >nul 2>&1 && set "PY=python"
+if not defined PY (where py >nul 2>&1 && set "PY=py -3")
+if defined PY (
+  echo  [검증] 인용문, 부서명, 연결 순서를 확인합니다...
+  echo.
+  %PY% scripts\verify.py
+  if errorlevel 1 (
+    echo.
+    echo  ------------------------------------------
+    echo   [중단] 검증에 걸렸습니다. 고치기 전에는 올리지 않습니다.
+    echo  ------------------------------------------
+    echo.
+    pause
+    exit /b 1
+  )
+  echo.
 )
 
 git add -A
@@ -63,8 +76,9 @@ if errorlevel 1 (
 
 echo.
 echo  ------------------------------------------
-echo   [완료] 올렸습니다.
-echo   1~2분 뒤 웹페이지에 반영됩니다.
+echo   [완료] 올렸습니다. 1~2분 뒤 반영됩니다.
+echo.
+echo   https://jbe-weekly-policy-meeting.vercel.app/
 echo   https://kain9012-bit.github.io/jbe-weekly-policy-meeting/
 echo  ------------------------------------------
 echo.

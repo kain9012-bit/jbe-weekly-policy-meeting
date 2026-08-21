@@ -1,5 +1,6 @@
 import React from 'react';
 import { Captions } from 'lucide-react';
+import { korDate } from '../lib/util';
 import type { ActiveTab } from '../types';
 
 const TABS: { id: ActiveTab; label: string }[] = [
@@ -13,10 +14,11 @@ const TABS: { id: ActiveTab; label: string }[] = [
 interface Props {
   activeTab: ActiveTab;
   setActiveTab: (t: ActiveTab) => void;
-  updatedAt?: string | null;
+  /** 가장 최근 회의 날짜 (ISO). 자료가 어디까지 와 있는지 보여준다. */
+  latestDate?: string | null;
 }
 
-export const Header: React.FC<Props> = ({ activeTab, setActiveTab, updatedAt }) => (
+export const Header: React.FC<Props> = ({ activeTab, setActiveTab, latestDate }) => (
   <header className="bg-white sticky top-0 z-30 border-b border-slate-200">
     {/* 안내 띠 — 공식 회의록이 아님을 먼저 밝힌다 (KRDS 마스트헤드 관례) */}
     <div className="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -24,8 +26,14 @@ export const Header: React.FC<Props> = ({ activeTab, setActiveTab, updatedAt }) 
         <span>
           유튜브 자동생성 자막을 정리한 <strong className="font-bold text-slate-900">비공식</strong> 자료입니다
         </span>
-        {updatedAt && (
-          <span className="shrink-0 tabular-nums">최근 갱신 {updatedAt.slice(0, 16).replace('T', ' ')}</span>
+        {/*
+          예전에는 `index.updatedAt`(수집기가 마지막으로 돈 시각)을 '최근 갱신' 으로 보여줬다.
+          그런데 요약을 손으로 고쳐도 이 값은 안 바뀌어서, 실제와 다른 시각이 떠 있었다.
+          읽는 사람이 알고 싶은 건 '자료가 어느 회의까지 와 있나' 이지 처리 시각이 아니다.
+          가장 최근 회의 날짜는 데이터에서 바로 나오므로 어긋날 수가 없다.
+        */}
+        {latestDate && (
+          <span className="shrink-0">최근 회의 {korDate(latestDate)}</span>
         )}
       </div>
     </div>
