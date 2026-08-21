@@ -215,26 +215,28 @@ export const MeetingTab: React.FC<Props> = ({
               </div>
             </section>
 
-            {/* 교정 내역 */}
-            {meeting.corrections.length > 0 && (
-              <section className="space-y-2">
-                <SectionTitle count={meeting.corrections.length} desc="문맥으로 바로잡은 자막 오인식">
-                  자막 교정
-                </SectionTitle>
-                <div className="flex flex-wrap gap-1.5">
-                  {meeting.corrections.map((c, i) => (
-                    <span key={i} className="px-2 py-1 rounded border border-slate-200 bg-white text-xs text-slate-600">
-                      <s className="text-slate-400">{c.from}</s>
-                      <span className="mx-1.5 text-slate-300">→</span>
-                      <strong className="font-bold text-slate-800">{c.to}</strong>
-                    </span>
-                  ))}
-                </div>
-              </section>
-            )}
+            {/*
+              '자막 교정' 목록은 여기서 뺐다.
+              회의에서 무슨 일이 있었나를 보러 온 사람에게 '자막이 누리집을 무리집으로
+              들었다'는 건 회의 내용이 아니라 시스템 사정이다. 그 정보가 필요한 자리는
+              회의록 전문 탭의 '자막 원문' 토글이다 — 교정된 문장마다 원문을 그 자리에
+              붙여 보여주므로, 맥락 안에서 볼 사람만 본다.
+            */}
 
             <p className="text-xs text-slate-400">
-              자막 경로 {meeting.meta.captionSource || '—'} · 요약 {meeting.meta.llm || '—'}
+              자막 경로 {meeting.meta.captionSource || '—'}
+              {entry?.hasTranscript && (
+                <>
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('transcript', undefined, meeting.id)}
+                    className="underline underline-offset-2 hover:text-slate-600"
+                  >
+                    회의록 전문에서 원문 대조
+                  </button>
+                </>
+              )}
             </p>
           </>
         )}
