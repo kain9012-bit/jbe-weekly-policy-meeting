@@ -31,3 +31,6 @@ _to_delete/
 # 단, 테스트 픽스처는 반드시 커밋한다
 !collector/tests/fixture_captions.json3
 !collector/tests/fixture_captions.vtt
+
+# Skill 은 폴더가 원본이다. 묶은 결과물(.skill)은 build.py 로 언제든 다시 만든다.
+skill/*.skill

@@ -1,7 +1,9 @@
 # 주간정책회의 브리핑
 
 전북특별자치도교육청 [주간정책회의 게시판](https://www.jbe.go.kr/jbeducation/board/list.jbe?boardId=BBS_0000681&menuCd=DOM_000000507001000000&contentsSid=3249&cpath=%2Fjbeducation)에
-새 회의 영상이 올라오면, 유튜브 자동생성 자막을 받아 회의록과 지시사항을 정리해 웹으로 공개합니다.
+새 회의 영상이 올라오면, **영상의 오디오를 직접 받아쓰고 목소리로 화자를 갈라내** 회의록과
+지시사항을 정리해 웹으로 공개합니다. 유튜브 자동자막은 버리지 않고 **받아쓰기 누락을 잡는
+대조본**으로 씁니다.
 
 별도 DB나 서버가 없습니다. 수집 결과는 `data/` 아래 JSON으로 쌓이고, 화면(Vite + React)이 그 JSON을 읽습니다.
 UI는 `k-edu-policy` 와 같은 KRDS 토큰·Pretendard·Tailwind 구성을 씁니다.
@@ -9,25 +11,30 @@ UI는 `k-edu-policy` 와 같은 KRDS 토큰·Pretendard·Tailwind 구성을 씁�
 ## 세 단계로 나눠 돌아갑니다
 
 ```
-1단계 · 자막                    1.5단계 · 교정·화자           2단계 · 요약
-게시판 → 신규 dataSid            문장 단위로 합치고            회의록 + 부서 목록
- → videoId                      10분씩 토막 내서 LLM          + 지난주 지시사항
- → yt-dlp (json3→vtt→API)        → 문맥 교정                   → LLM
- → 부서명 사전 후보정              → 화자 추정                    → 요약·안건·지시·처리결과
-   ↓                              ↓                            ↓
-data/transcripts/*.json      data/refined/*.json          data/meetings/*.json
+1단계 · 자막·오디오            1.5단계 · 받아쓰기·화자        2단계 · 요약
+게시판 → 신규 dataSid          whisper large-v3-turbo         회의록 + 이전 회차 지시
+ → videoId                    → 자막과 30초 창 대조            → 사람(Claude)이 작성
+ → 유튜브 자막 (대조용)          → 삼킨 구간 다시 받아쓰기         → 요약·안건·지시·처리결과
+ → 오디오 (오디오받기.bat)       → 목소리 군집 → 화자             → verify.py 로 검증
+   ↓                            ↓                             ↓
+data/transcripts/*.json      data/asr/ → data/refined/     data/meetings/*.json
+                             data/human/ (사람이 채운 것)
 ```
 
 각 단계가 **따로 저장되고 따로 다시 돌릴 수 있습니다.** 뒤 단계가 실패해도 앞 결과는 남습니다.
 앞 단계가 실패하면 뒤 단계는 시도하지 않습니다 — 자막 없이 만든 요약은 의미가 없습니다.
 
 ```bash
-python collector/fetch_transcripts.py --check   # 단계별 진행 상태를 표로 확인
-python collector/fetch_transcripts.py --all     # 1단계만
-python collector/refine.py --dry-run            # 1.5단계 비용을 미리 계산
-python collector/refine.py --all                # 1.5단계만
-python collector/run.py                         # 신규 회차를 끝까지
+python collector/fetch_transcripts.py --check      # 단계별 진행 상태를 표로 확인
+python collector/fetch_transcripts.py              # 자막 (대조용)
+python collector/fetch_audio.py                    # 오디오 — 반드시 국내 IP 컴퓨터에서
+python collector/transcribe.py --id 2026-W35       # 받아쓰기 + 자막 대조 + 화자 분리
+python collector/segment.py --from-asr --id 2026-W35   # 발언 단위로 정리
+python scripts/verify.py                           # 발행 전 검증
 ```
+
+`refine.py`(LLM 문맥 교정)와 `summarize.py`(LLM 요약)는 API 방식으로 만들어 두었지만
+**지금은 쓰지 않습니다.** 요약과 화자 배정은 대화 세션에서 사람이 합니다.
 
 처리 여부는 `data/index.json` 으로 판단합니다. 회의 ID는 게시일의 ISO 주차(`2026-W34`)입니다.
 
@@ -113,17 +120,50 @@ python collector/make_hwpx.py --id 2026-W34 --out 전달사항.hwpx
 자동자막은 한 줄이 16자쯤으로 잘게 쪼개져 있어(26분에 591줄) 먼저 문장 단위로 합칩니다.
 26분 회의가 150문장이 되고, 출력 토큰이 28%쯤 줄면서 읽기도 좋아집니다.
 
+## 정리 절차는 Skill 로 묶여 있습니다
+
+`skill/jbe-weekly-meeting/` 이 원본입니다. Claude 에 저장해 두면 "주간정책회의 정리해줘"
+한마디로 절차와 판단 기준이 그대로 재현됩니다.
+
+```bash
+python skill/build.py        # 고쳤으면 다시 묶는다 → skill/jbe-weekly-meeting.skill
+python scripts/verify.py     # 발행 전 검증 (원본은 skill 안에 있고 이건 껍데기)
+```
+
+| 파일 | 내용 |
+|---|---|
+| `SKILL.md` | 절대 규칙과 0~7단계 절차 |
+| `references/pipeline.md` | 각 단계가 왜 그렇게 생겼는지 |
+| `references/lessons.md` | 틀렸다가 고친 10가지와 그 이유 |
+| `references/pitfalls.md` | 받아쓰기·화자 분리가 자주 틀리는 자리 |
+| `references/departments.json` | 본청 20개 부서 (기구도 기준) |
+| `scripts/verify.py` | 인용문·부서명·연결 순서·화자 누락 검사 |
+
+**같은 검사를 두 벌 두면 반드시 어긋나므로, 검증 스크립트의 원본은 Skill 안에만 둡니다.**
+저장소 루트의 `scripts/verify.py` 는 짧게 부르기 위한 껍데기입니다.
+
+### 발행 전에 반드시
+
+```bash
+python scripts/verify.py
+```
+
+하나라도 걸리면 고치기 전에 `git push` 하지 않습니다. 여기서 걸리는 항목은 전부
+실제로 한 번씩 사고가 났던 것들입니다 — 인용문이 회의록에 없음, 처리결과가 전부 연결 안 됨,
+기구도에 없는 부서명, 부서가 빈 지시, 화자가 빈 발언.
+
 ## 화면
 
 | 탭 | 내용 |
 |---|---|
 | 홈 | 검색창, 수집 지표, 최근 회의, 회차별 자막·요약 진행 상태 |
-| 회의 요약 | 영상 + 한눈에 보기 + 요약 + 처리 결과 + 안건 + 지시사항 + 자막 교정 내역 |
-| 회의록 전문 | 화자별로 끊어 읽기, 시간별/이어보기 전환, 회의록 내 검색, 자막 원문 대조, 복사·TXT |
-| 지시사항 | 부서·유형·이행 상태로 걸러 보고, 이후 회차 보고와 연결 |
-| 통합검색 | 안건·지시·처리결과·발언 전문을 한 번에 |
+| 회의 요약 | 영상 + 한눈에 보기 + 요약 + 처리 결과 + 안건 + 지시사항 + 전달사항 hwpx 내려받기 |
+| 회의록 전문 | 화자별로 끊어 읽기, 부서 보고 구간 필터, 회의록 내 검색, 복사·TXT |
+| 지시사항 | 회차·부서·유형·이행 상태로 거르고, 카드를 펼쳐 처리 결과 확인 |
+| 통합검색 | 회차·부서·범위로 걸러 안건·지시·처리결과·발언 전문을 한 번에 |
 
-모든 항목에 타임스탬프가 붙어 있어, 누르면 영상의 해당 지점으로 이동합니다.
+모든 항목에 타임스탬프가 붙어 있어 영상의 해당 지점으로 이동하고, 「회의록에서 보기」로
+회의록 전문의 그 발언으로도 갈 수 있습니다.
 **자동자막 기반이라 오류가 섞입니다. 요약을 그대로 믿지 말고 원문으로 확인할 수 있게 만든 구조입니다.**
 
 ## ⚠️ 러너는 자체 호스팅이어야 합니다
