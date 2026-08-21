@@ -169,6 +169,30 @@ def resplit(sents: list[dict]) -> list[list[dict]]:
     return [g for g in groups if g]
 
 
+def merge_same_speaker(cues: list[dict]) -> list[dict]:
+    """이어지는 발언의 화자가 같으면 한 덩어리로 합치고, 발언 목록을 다시 만든다.
+
+    목소리 군집은 짧은 맞장구("네.", "홍보도 좀 해 주시고.")를 엉뚱한 군집으로
+    떼어 놓는 일이 있다. 그러면 교육감이 이어 말하는 20초가 5:06 / 5:08 / 5:10
+    세 덩어리로 쪼개져 화면에 나온다. 실제로 그렇게 나왔다.
+
+    화자 이름이 같으면 어차피 한 사람의 말이므로 붙인다. **화자를 모르는 발언은
+    붙이지 않는다** — 모르는 사람 둘을 한 사람으로 만들어 버리기 때문이다.
+    """
+    prev = None
+    for c in cues:
+        if not c.get("turnStart"):
+            continue
+        sp = c.get("speaker")
+        if sp and sp == prev:
+            c.pop("turnStart", None)
+            c.pop("speaker", None)
+            c.pop("block", None)
+            continue
+        prev = sp or None
+    return [c for c in cues if c.get("turnStart")]
+
+
 def mark_blocks(heads: list[dict]) -> None:
     """각 발언이 '어느 부서의 보고 구간'에 속하는지 표시한다.
 
@@ -277,8 +301,9 @@ def from_asr(asr: dict, meta: dict) -> dict:
         cues[0]["turnStart"] = True
         heads.insert(0, cues[0])
 
-    human_heads = apply_human(meta["id"], cues)
-    mark_blocks(human_heads or heads)
+    apply_human(meta["id"], cues)
+    heads = merge_same_speaker(cues)
+    mark_blocks(heads)
 
     out = {k: meta[k] for k in
            ("id", "postId", "postUrl", "title", "date", "videoId", "videoUrl", "durationSec")
@@ -287,8 +312,8 @@ def from_asr(asr: dict, meta: dict) -> dict:
         "cues": cues,
         "cueCount": len(cues),
         "charCount": sum(len(c["text"]) for c in cues),
-        "turnCount": len(human_heads or heads),
-        "speakerTurns": sum(1 for h in (human_heads or heads) if h.get("speaker")),
+        "turnCount": len(heads),
+        "speakerTurns": sum(1 for h in heads if h.get("speaker")),
         "changedLines": sum(1 for c in cues if c.get("raw")),
         "captionFallbacks": sum(1 for c in cues if c.get("fromCaption")),
         "source": asr.get("source", "whisper"),
@@ -339,9 +364,10 @@ def segment(doc: dict) -> dict:
             cues.extend(items)
 
     # 사람이 고친 게 있으면 그걸 반영한 뒤에 구간을 다시 계산한다.
-    human_heads = apply_human(doc["id"], cues)
-    mark_blocks(human_heads or heads)
-    turn_count = len(human_heads or heads)
+    apply_human(doc["id"], cues)
+    heads = merge_same_speaker(cues)
+    mark_blocks(heads)
+    turn_count = len(heads)
 
     out = dict(doc)
     out["cues"] = cues

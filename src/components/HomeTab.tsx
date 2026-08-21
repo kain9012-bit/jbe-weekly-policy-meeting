@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Search, ArrowRight, FileText, Captions, ListChecks, CircleAlert, CircleCheck, UserRound } from 'lucide-react';
-import type { ActiveTab, IndexDoc } from '../types';
+import type { IndexDoc, Navigate } from '../types';
 import { Badge, SectionTitle } from './Ui';
 import { duration, korDate, stageOf, STAGE_LABEL } from '../lib/util';
 
 interface Props {
   index: IndexDoc;
-  onNavigate: (tab: ActiveTab, query?: string, meetingId?: string) => void;
+  onNavigate: Navigate;
 }
 
 export const HomeTab: React.FC<Props> = ({ index, onNavigate }) => {
@@ -159,11 +159,9 @@ export const HomeTab: React.FC<Props> = ({ index, onNavigate }) => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
-                  <th className="text-left font-bold px-4 py-3 whitespace-nowrap">회차</th>
                   <th className="text-left font-bold px-4 py-3 whitespace-nowrap">일자</th>
                   <th className="text-left font-bold px-4 py-3">제목</th>
                   <th className="text-right font-bold px-4 py-3 whitespace-nowrap">길이</th>
-                  <th className="text-right font-bold px-4 py-3 whitespace-nowrap">자막 줄</th>
                   <th className="text-left font-bold px-4 py-3 whitespace-nowrap">상태</th>
                 </tr>
               </thead>
@@ -172,7 +170,6 @@ export const HomeTab: React.FC<Props> = ({ index, onNavigate }) => {
                   const st = stageOf(m);
                   return (
                     <tr key={m.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-bold text-slate-900 tabular-nums whitespace-nowrap">{m.id}</td>
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{korDate(m.date)}</td>
                       <td className="px-4 py-3">
                         <button
@@ -185,9 +182,6 @@ export const HomeTab: React.FC<Props> = ({ index, onNavigate }) => {
                       </td>
                       <td className="px-4 py-3 text-right text-slate-600 tabular-nums whitespace-nowrap">
                         {duration(m.durationSec)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600 tabular-nums whitespace-nowrap">
-                        {m.cueCount ? m.cueCount.toLocaleString() : '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5">

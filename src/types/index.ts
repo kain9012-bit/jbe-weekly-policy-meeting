@@ -1,5 +1,11 @@
 export type ActiveTab = 'home' | 'meeting' | 'transcript' | 'directives' | 'search';
 
+/**
+ * 탭 이동. `at`(초) 를 주면 회의록 전문에서 그 시각의 발언으로 데려간다.
+ * 지시사항에서 영상 말고 회의록으로도 갈 수 있어야 한다는 요구로 붙였다.
+ */
+export type Navigate = (tab: ActiveTab, query?: string, meetingId?: string, at?: number) => void;
+
 /** 자막 한 문장 */
 export interface Cue {
   t: number;         // 시작 초

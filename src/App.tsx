@@ -119,9 +119,16 @@ export default function App() {
   // 탭을 바꾸면 화면 맨 위부터 보여준다.
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, [activeTab]);
 
-  const navigate = (tab: ActiveTab, query?: string, meetingId?: string) => {
+  /**
+   * 탭 이동. `at` 을 주면 회의록 전문의 그 시각으로 데려간다.
+   * 지시사항에서 "이 대목을 회의록에서 보고 싶다"는 요구가 있어서 붙였다.
+   */
+  const [jumpTo, setJumpTo] = useState<number | null>(null);
+
+  const navigate = (tab: ActiveTab, query?: string, meetingId?: string, at?: number) => {
     if (query !== undefined) setSearchQuery(query);
     if (meetingId) setCurrentId(meetingId);
+    setJumpTo(at ?? null);
     setActiveTab(tab);
   };
 
@@ -175,11 +182,13 @@ export default function App() {
                 setCurrentId={setCurrentId}
                 transcript={transcripts[currentId] ?? null}
                 loading={detailLoading}
+                jumpTo={jumpTo}
+                onJumped={() => setJumpTo(null)}
               />
             )}
 
             {activeTab === 'directives' && (
-              <DirectivesTab index={index} meetings={meetings} loading={detailLoading} />
+              <DirectivesTab index={index} meetings={meetings} loading={detailLoading} onNavigate={navigate} />
             )}
 
             {activeTab === 'search' && (

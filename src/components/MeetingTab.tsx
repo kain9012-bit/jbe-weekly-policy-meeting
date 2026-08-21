@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, ChevronRight, Download } from 'lucide-react';
-import type { ActiveTab, IndexDoc, MeetingDoc } from '../types';
+import type { IndexDoc, MeetingDoc, Navigate } from '../types';
 import { Badge, EmptyState, Quote, SampleNotice, SectionTitle, TimeLink } from './Ui';
 import { duration, korDate, splitDepts } from '../lib/util';
 
@@ -10,7 +10,7 @@ interface Props {
   setCurrentId: (id: string) => void;
   meeting: MeetingDoc | null;
   loading: boolean;
-  onNavigate: (tab: ActiveTab, query?: string, meetingId?: string) => void;
+  onNavigate: Navigate;
 }
 
 const progressTone = (p: string) =>
@@ -80,7 +80,6 @@ export const MeetingTab: React.FC<Props> = ({
             {meeting._sample && <SampleNotice note={meeting._sampleNote} />}
 
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge tone="blue">{meeting.id}</Badge>
               <Badge>{korDate(meeting.date)}</Badge>
               <Badge>{duration(meeting.durationSec)}</Badge>
               <a

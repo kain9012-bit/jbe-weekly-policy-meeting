@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ListChecks, RotateCcw } from 'lucide-react';
-import type { Directive, IndexDoc, MeetingDoc } from '../types';
+import { ListChecks, RotateCcw, FileText } from 'lucide-react';
+import type { Directive, IndexDoc, MeetingDoc, Navigate } from '../types';
 import { Badge, EmptyState, Quote, SectionTitle, TimeLink } from './Ui';
 import { hasDept, highlight, korDate, splitDepts, sortDepts } from '../lib/util';
 
@@ -8,6 +8,7 @@ interface Props {
   index: IndexDoc;
   meetings: Record<string, MeetingDoc>;
   loading: boolean;
+  onNavigate: Navigate;
 }
 
 type Row = Directive & { meeting: MeetingDoc };
@@ -28,8 +29,9 @@ function traceFollowup(row: Row, all: MeetingDoc[]) {
   return null;
 }
 
-export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => {
+export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading, onNavigate }) => {
   const [dept, setDept] = useState('ALL');
+  const [round, setRound] = useState('ALL');
   const [type, setType] = useState('ALL');
   const [status, setStatus] = useState<'ALL' | 'open' | 'reported'>('ALL');
   const [q, setQ] = useState('');
@@ -65,6 +67,7 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
     const k = q.trim().toLowerCase();
     return traced
       .filter(({ row, trace }) => {
+        if (round !== 'ALL' && row.meeting.id !== round) return false;
         if (dept !== 'ALL' && !hasDept(row.dept, dept)) return false;
         if (type !== 'ALL' && (row.type || '지시') !== type) return false;
         if (status === 'open' && trace) return false;
@@ -75,9 +78,9 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
       .sort((a, b) =>
         b.row.meeting.date.localeCompare(a.row.meeting.date) || a.row.t - b.row.t,
       );
-  }, [traced, dept, type, status, q]);
+  }, [traced, round, dept, type, status, q]);
 
-  const reset = () => { setDept('ALL'); setType('ALL'); setStatus('ALL'); setQ(''); };
+  const reset = () => { setRound('ALL'); setDept('ALL'); setType('ALL'); setStatus('ALL'); setQ(''); };
 
   if (loading) {
     return <p className="text-sm text-slate-500 py-2" role="status">지시사항을 모으는 중입니다…</p>;
@@ -105,6 +108,15 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
 
       {/* ── 필터 ── */}
       <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={round} onChange={(e) => setRound(e.target.value)}
+          aria-label="회의"
+          className="h-11 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
+        >
+          <option value="ALL">전체 회의</option>
+          {index.meetings.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+        </select>
+
         <select
           value={dept} onChange={(e) => setDept(e.target.value)}
           aria-label="부서"
@@ -193,6 +205,16 @@ export const DirectivesTab: React.FC<Props> = ({ index, meetings, loading }) => 
                   {row.due && <Badge tone="amber">{row.due}</Badge>}
                   <span className="text-xs text-slate-500">{korDate(row.meeting.date)}</span>
                   <TimeLink videoId={row.meeting.videoId} t={row.t} />
+                  {/* 영상 말고 회의록에서 그 대목을 읽고 싶을 때 */}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('transcript', undefined, row.meeting.id, row.t)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-700
+                               hover:underline underline-offset-4"
+                  >
+                    <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                    회의록에서 보기
+                  </button>
                 </div>
                 <p className="text-base font-bold text-slate-900 leading-snug">
                   {highlight(row.text, q)}

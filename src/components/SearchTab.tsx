@@ -34,6 +34,7 @@ export const SearchTab: React.FC<Props> = ({
 }) => {
   const [q, setQ] = useState(initialQuery);
   const [dept, setDept] = useState('ALL');
+  const [round, setRound] = useState('ALL');
   const [scope, setScope] = useState<'all' | '안건' | '지시' | '보고' | '발언'>('all');
   const [limit, setLimit] = useState(100);
 
@@ -46,7 +47,7 @@ export const SearchTab: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
-  React.useEffect(() => setLimit(100), [q, dept, scope]);
+  React.useEffect(() => setLimit(100), [q, round, dept, scope]);
 
   const hits = useMemo<Hit[]>(() => {
     const k = q.trim().toLowerCase();
@@ -56,6 +57,7 @@ export const SearchTab: React.FC<Props> = ({
     const out: Hit[] = [];
 
     for (const entry of index.meetings) {
+      if (round !== 'ALL' && entry.id !== round) continue;
       const m = meetings[entry.id];
       const base = {
         meetingTitle: entry.title,
@@ -89,7 +91,7 @@ export const SearchTab: React.FC<Props> = ({
     }
 
     return out.sort((a, b) => b.meetingDate.localeCompare(a.meetingDate) || a.t - b.t);
-  }, [q, dept, scope, index, meetings, transcripts]);
+  }, [q, round, dept, scope, index, meetings, transcripts]);
 
   // 한 건이 여러 부서에 걸릴 수 있다. 쪼개서 개별 부서로 목록을 만든다.
   const depts = useMemo(() => {
@@ -121,6 +123,15 @@ export const SearchTab: React.FC<Props> = ({
                        text-slate-900 placeholder-slate-400 outline-none focus:border-blue-600"
           />
         </div>
+
+        <select
+          value={round} onChange={(e) => setRound(e.target.value)}
+          aria-label="회의"
+          className="h-12 px-3 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-800"
+        >
+          <option value="ALL">전체 회의</option>
+          {index.meetings.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+        </select>
 
         <select
           value={dept} onChange={(e) => setDept(e.target.value)}

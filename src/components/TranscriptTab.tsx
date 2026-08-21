@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Captions, Copy, Check, Download, Search } from 'lucide-react';
 import type { Cue, IndexDoc, TranscriptDoc } from '../types';
 import { Badge, EmptyState, SampleNotice, TimeLink } from './Ui';
@@ -10,12 +10,15 @@ interface Props {
   setCurrentId: (id: string) => void;
   transcript: TranscriptDoc | null;
   loading: boolean;
+  /** 이 시각(초)의 발언으로 데려간다. 지시사항 탭에서 넘어올 때 쓴다. */
+  jumpTo?: number | null;
+  onJumped?: () => void;
 }
 
 type View = 'lines' | 'flow';
 
 export const TranscriptTab: React.FC<Props> = ({
-  index, currentId, setCurrentId, transcript, loading,
+  index, currentId, setCurrentId, transcript, loading, jumpTo, onJumped,
 }) => {
   const [q, setQ] = useState('');
   const [view, setView] = useState<View>('lines');
@@ -23,6 +26,8 @@ export const TranscriptTab: React.FC<Props> = ({
   const [copied, setCopied] = useState(false);
 
   const entry = index.meetings.find((m) => m.id === currentId);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [flash, setFlash] = useState<number | null>(null);
 
   /** 부서 보고 구간 목록 — 회의에 나온 순서대로 */
   const blocks = useMemo(() => {
@@ -55,6 +60,29 @@ export const TranscriptTab: React.FC<Props> = ({
     }
     return out;
   }, [cues]);
+
+  /**
+   * 넘겨받은 시각의 발언으로 데려간다.
+   * 지시가 나온 순간이 발언 한가운데인 일이 많으므로, **그 시각을 넘지 않는
+   * 마지막 발언**을 고른다. 정확히 일치하는 발언만 찾으면 대개 못 찾는다.
+   */
+  useEffect(() => {
+    if (jumpTo == null || !transcript) return;
+    const heads = transcript.cues.filter((c) => c.turnStart);
+    const target = [...heads].reverse().find((c) => c.t <= jumpTo) ?? heads[0];
+    if (!target) return;
+    // 필터가 걸려 있으면 대상이 화면에 없다. 먼저 푼다.
+    setBlock('ALL');
+    setQ('');
+    const id = window.setTimeout(() => {
+      const el = boxRef.current?.querySelector<HTMLElement>(`[data-t="${target.t}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setFlash(target.t);
+      window.setTimeout(() => setFlash(null), 2200);
+      onJumped?.();
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [jumpTo, transcript, onJumped]);
 
   const fullText = useMemo(() => {
     if (!transcript) return '';
@@ -200,7 +228,6 @@ export const TranscriptTab: React.FC<Props> = ({
           {transcript._sample && <SampleNotice note={transcript._sampleNote} />}
 
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge tone="blue">{transcript.id}</Badge>
             <Badge>{korDate(transcript.date)}</Badge>
             <Badge>{duration(transcript.durationSec)}</Badge>
             {/* 줄 수·글자 수·'부서 확인' 같은 내부 수치는 읽는 사람이 쓸 데가 없다. */}
@@ -222,7 +249,7 @@ export const TranscriptTab: React.FC<Props> = ({
             </p>
           )}
 
-          <div className="bg-white rounded-lg border border-slate-200 p-5">
+          <div ref={boxRef} className="bg-white rounded-lg border border-slate-200 p-5">
             {turns.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">검색어와 맞는 발언이 없습니다.</p>
             ) : view === 'lines' ? (
@@ -239,7 +266,12 @@ export const TranscriptTab: React.FC<Props> = ({
                           <span className="text-xs text-slate-400">보고 구간</span>
                         </h3>
                       )}
-                      <div className="grid grid-cols-[68px_1fr] gap-3">
+                      <div
+                        data-t={head.t}
+                        className={`grid grid-cols-[68px_1fr] gap-3 rounded-md transition-colors ${
+                          flash === head.t ? 'bg-amber-50 ring-2 ring-amber-300 -mx-2 px-2 py-1' : ''
+                        }`}
+                      >
                         <TimeLink videoId={transcript.videoId} t={head.t} />
                         <div className="min-w-0">
                           {head.speaker && (
