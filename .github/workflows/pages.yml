@@ -39,9 +39,8 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # 수집 결과 JSON 은 빌드 산출물 옆에 그대로 올린다.
-      - name: 데이터 복사
-        run: cp -r data dist/data
+      # 데이터 복사는 `npm run build` 안에서 한다 (scripts/copy-data.mjs).
+      # 여기서 또 복사하면 dist/data/data 가 생긴다.
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

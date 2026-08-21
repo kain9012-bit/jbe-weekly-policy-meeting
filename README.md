@@ -166,6 +166,26 @@ python scripts/verify.py
 회의록 전문의 그 발언으로도 갈 수 있습니다.
 **자동자막 기반이라 오류가 섞입니다. 요약을 그대로 믿지 말고 원문으로 확인할 수 있게 만든 구조입니다.**
 
+## 배포
+
+같은 저장소를 두 곳에 올립니다. 둘 다 `npm run build` 하나로 끝나도록 맞춰 두었습니다.
+
+| | 주소 | 배포 시점 |
+|---|---|---|
+| Vercel | https://jbe-weekly-policy-meeting.vercel.app/ | `main` 에 push 하면 자동 |
+| GitHub Pages | https://kain9012-bit.github.io/jbe-weekly-policy-meeting/ | `pages.yml` 워크플로 |
+
+**`data/` 복사는 빌드 명령 안에 있습니다**(`scripts/copy-data.mjs`).
+예전에는 GitHub Actions 워크플로에만 있어서, `npm run build` 만 부르는 Vercel 에서는
+**화면은 뜨는데 회의가 하나도 없는 상태**로 배포됐습니다. 어디서 빌드하든 같아야 합니다.
+
+배포에 올리지 않는 것: `data/audio/`(원본 오디오), `data/asr/`(받아쓰기 원본),
+`data/human/`(사람이 채운 화자·교정). 앞의 둘은 크고, 셋 다 브라우저가 받아 갈 이유가 없습니다.
+`asr/` 와 `human/` 은 재현을 위해 저장소에는 남겨 둡니다.
+
+`vite.config.ts` 의 `base: './'` 덕분에 루트(Vercel)와 하위 경로(Pages) 양쪽에서
+같은 산출물이 그대로 동작합니다. 경로를 절대경로로 바꾸면 한쪽이 깨집니다.
+
 ## ⚠️ 러너는 자체 호스팅이어야 합니다
 
 GitHub이 제공하는 클라우드 러너(미국 Azure 데이터센터 IP)에서 yt-dlp 로 유튜브 자막을 받으면
